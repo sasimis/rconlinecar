@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<!-- Prism VSCode-Like Theme -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" />
+
+<!-- Prism Core (must load before any language) -->
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+
+<link rel="stylesheet" href="templates/style.css">
+
+
+  <title>RC Project Showcase</title>
+  
+</head>
+<body>
+  <header>
+    <div></div>
+    <nav>
+  <a href="index.html">EN</a> |
+  <a href="index-el.html">GR</a>
+</nav>
+
+    <nav>
+      <a href="#">Home</a>
+      <a href="#">About</a>
+      <a href="#">Portfolio</a>
+      <a href="#">Contact</a>
+    </nav>
+  </header>
+
+  <div class="main">
+    <h1>RC online car</h1>
+    <p>This project showcases the communication and power flow within an RC vehicle using ESP32 and brushless motor control.</p>
+  </div>
+
+ 
+  <div class="gallery">
+  <div class="image-box"><img src="templates/car.jpg" alt=""/></div>
+  <div class="image-box"><img src="templates/blueprint.PNG" alt=""/></div>
+  <div class="image-box"><img src="templates/dashboard.png" alt=""/></div>
+  <div class="image-box"><img src="templates/img.JPEG" alt=""/></div>
+</div>
+
+  <section style="width: 100%; max-width: 1000px; padding: 40px 20px; box-sizing: border-box;">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 40px;">
+      <img src="templates/img.JPEG" alt="Device 1" style="width: 100%; max-width: 300px; margin-right: 40px; flex-shrink: 0; border: 1px solid #ddd;" />
+      <div style="flex: 1; min-width: 200px;">
+        <h2 style="margin-top: 0;">Hardware Parts</h2>
+        <p>-RC Car with brushless motor and ESC<br>
+        -Li-po battery<br>
+      -ESP32 Microcontroller <br>
+    -Android phone</p>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 40px;">
+      <img src="templates/screen.png" alt="Device 2" style="width: 100%; max-width: 300px; margin-right: 40px; flex-shrink: 0; border: 1px solid #ddd;" />
+      <div style="flex: 1; min-width: 200px;">
+        <h2 style="margin-top: 0;">Software</h2>
+        <p> - C++ for ESP32<br>
+        - Python for backend communication<br>
+      - HTML/CSS/JS frontend design<br></p>
+      -tailscale app for remote access & IP Webcam app for streaming.
+      </div>
+    </div>
+
+<section id="diagram-section" style="position: relative; height: 800px; background: #fff;">
+  <
+
+  <!-- Component Boxes -->
+  <div class="diagram-box" style="top: 20px; left: 340px;">
+    <h4> Standard Analog Servo</h4>
+    <img src="templates/servo.png" alt="Servo">
+  </div>
+
+  <div class="diagram-box" style="top: 300px; left: 30px;">
+    <h4>ESP32</h4>
+    <img src="templates/esp.png" alt="ESP32">
+  </div>
+
+  <div class="diagram-box" style="top: 300px; left: 340px;">
+    <h4>Xiaomi</h4>
+    <img src="templates/android.png" alt="Phone">
+  </div>
+
+  <div class="diagram-box" style="top: 20px; left: 630px;">
+    <h4>ESC & Motor</h4>
+    <img src="templates/esc.png" alt="Motor">
+  </div>
+
+  <div class="diagram-box" style="top: 300px; left: 630px;">
+    <h4>Li-Po Battery</h4>
+    <img src="templates/battery.png" alt="Battery">
+  </div>
+
+  <!-- SVG Arrows with Text Labels -->
+  <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0; pointer-events: none;">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="orange" />
+      </marker>
+    </defs>
+
+    <path id="p1" d="M240,320 C300,300 330,100 380,100" />
+    <path id="p2" d="M240,320 C300,320 330,320 380,320" />
+    <path id="p3" d="M240,320 C270,350 630,350 630,100" />
+    <path id="p4" d="M740,320 C700,300 670,200 670,100" />
+    <path id="p5" d="M380,100 C430,100 580,100 630,100" />
+
+    <!-- Labels -->
+    <text>
+      <textPath href="#p1" startOffset="50%">Servo steering Signal</textPath>
+    </text>
+    <text>
+      <textPath href="#p2" startOffset="50%">Data + Power Transfer</textPath>
+    </text>
+    <text>
+      <textPath href="#p3" startOffset="50%">Ground Pin</textPath>
+    </text>
+    <text>
+      <textPath href="#p4" startOffset="50%">Power 7.4V</textPath>
+    </text>
+    <text>
+      <textPath href="#p5" startOffset="50%">Motor Power</textPath>
+    </text>
+  </svg>
+
+  <!-- Scroll-triggered Animation -->
+  <script>
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          document.querySelector('#diagram-section svg').classList.add('animate');
+          observer.disconnect();
+        }
+      });
+    }, { threshold: 0.3 });
+
+    observer.observe(document.querySelector('#diagram-section'));
+  </script>
+</section>
+<section class="steps-section">
+  <h2 class="steps-title">How all fit in</h2>
+
+  <div class="step" onclick="toggleStep(this)">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <h3>ESP32</h3>
+        <p>A Type C USB cable is used to connect the ESP32 to the android device. The device supports Wifi connection<br>
+        which is connected to the mobile network. C++ for Arduino is used to program the ESP32.<br>
+        ESP32 receives commands and controls the steering (Servo) & the Electronic Speed Controller (ESC).</p>
+      </div>
+    </div>
+    <div class="step-drawer">
+           <div class="slide drawer-content">
+            <pre><code class="language-cpp">
+#include &lt;WiFi.h&gt;
+#include &lt;PubSubClient.h&gt;
+#include &lt;ESP32Servo.h&gt;
+#include &lt;ArduinoJson.h&gt;
+
+// your home-hotspot or any Internet-connected Wi-Fi
+const char* SSID     = "Redmi10s";
+const char* PASS     = "12345678";
+
+// public broker
+const char* MQTT_BROKER = "broker.hivemq.com";
+const int   MQTT_PORT   = 1883;
+const char* TOPIC_INPUT = "myrc/car1/input";
+
+WiFiClient    net;
+PubSubClient  mqtt(net);
+
+// pins
+const int STEERING_PIN = 18;
+const int ESC_PIN      = 19;
+
+// servos
+Servo steeringServo, esc;
+
+// state
+int steeringAngle = 90;
+int throttlePWM   = 0;
+
+// parse incoming MQTT JSON
+void onMqttMessage(char* topic, byte* payload, unsigned int len) {
+  // copy into a String
+  String msg;
+  for(int i = 0; i &lt; len; i++) msg += (char)payload[i];
+
+  // expected: {"angle":…, "pwm":…, "gear":…}
+  StaticJsonDocument&lt;200&gt; doc;
+  DeserializationError err = deserializeJson(doc, msg);
+  if(err) {
+    Serial.println("❌ JSON parse failed");
+    return;
+  }
+  steeringAngle = doc["angle"];
+  throttlePWM   = doc["pwm"];
+  Serial.printf("📥 MQTT → angle=%d pwm=%d\n", steeringAngle, throttlePWM);
+}
+
+void setup() {
+  Serial.begin(115200);
+  WiFi.begin(SSID, PASS);
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ Wi-Fi up, IP=" + WiFi.localIP().toString());
+
+  mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+  mqtt.setCallback(onMqttMessage);
+  while(!mqtt.connected()) {
+    Serial.print("⏳ MQTT connecting…");
+    if(mqtt.connect("ESP32RCCar")) {
+      Serial.println("✅");
+    } else {
+      Serial.print(" failed, rc=");
+      Serial.print(mqtt.state());
+      Serial.println(" retrying in 2s");
+      delay(2000);
+    }
+  }
+  mqtt.subscribe(TOPIC_INPUT);
+  Serial.println("🔴 Subscribed to " + String(TOPIC_INPUT));
+
+  // attach servos/ESC
+  steeringServo.setPeriodHertz(50);
+  esc.setPeriodHertz(50);
+  steeringServo.attach(STEERING_PIN, 500, 2500);
+  esc.attach(ESC_PIN, 1000, 2000);
+
+  // arm ESC
+  esc.writeMicroseconds(2000); delay(500);
+  esc.writeMicroseconds(1000); delay(500);
+  esc.writeMicroseconds(1500); delay(500);
+}
+
+void loop() {
+  mqtt.loop();  // pump incoming MQTT
+
+  // drive
+  steeringServo.write(steeringAngle);
+  int us = map(throttlePWM, -255, 255, 1000, 2000);
+  esc.writeMicroseconds(constrain(us, 1000, 2000));
+}
+</code></pre></div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <div class="step" onclick="toggleStep(this)">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <h3>Phone Apps</h3>
+        <p>IP Webcam app is being used for capturing video real-time and broadcasting in the dashboard webpage. <br>
+        Tailscale app is used both on PC and android creating a secure VPN connection</p>
+      </div>
+    </div>
+    <div class="step-drawer">
+      <div class="carousel">
+        <div class="slides">
+          <div class="slide" style="background-image: url('templates/ipcam.png');">IP webcam app logo</div>
+          <div class="slide" style="background-image: url('templates/tailscale.png');">Tailscale app logo</div>
+          <div class="slide" style="background-image: url('templates/cam.png');">Phone being installed on spoiler wing and camera broadcasting live</div>
+        
+
+        </div>
+        <div class="dots">
+          <span onclick="goToSlide(this, 0)" class="dot active"></span>
+          <span onclick="goToSlide(this, 1)" class="dot"></span>
+           <span onclick="goToSlide(this, 2)" class="dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step" onclick="openDrawer(this)">
+  <div class="step-header">
+    <div class="step-number">3</div>
+    <div class="step-content">
+      <h3>Initialize Motor Control</h3>
+      <p>This Python Flask application provides a real-time control interface for an RC car using a PS4 controller 🎮 and an Android phone as both a camera and a server</p>
+    </div>
+  </div>
+  <div class="step-drawer">
+    <div class="carousel">
+        <div class="slides">
+    <pre><code class="language-python">
+import os
+import time
+import json
+import eventlet
+eventlet.monkey_patch()
+
+from flask import render_template
+
+from flask import Flask, render_template, Response
+from flask_socketio import SocketIO
+import paho.mqtt.client as mqtt
+import cv2    # ← new
+
+# — Flask / Socket.IO setup —
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'rc-car-secret'
+socketio = SocketIO(
+    app,
+    async_mode='eventlet',
+    cors_allowed_origins="*",
+    logger=True,
+    engineio_logger=True
+)
+
+@app.route('/phone')
+def phone():
+    # renders the phone broadcaster template
+    return render_template('phone_loc.html')
+
+# — MQTT setup (unchanged) —
+MQTT_BROKER = os.getenv('MQTT_BROKER', 'broker.hivemq.com')
+MQTT_PORT   = int(os.getenv('MQTT_PORT', '1883'))
+TOPIC_INPUT = 'myrc/car1/input'
+mqttc = mqtt.Client()
+mqttc.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+mqttc.loop_start()
+
+# — Gear & smoothing (unchanged) —
+GEAR_SCALE      = [0.0, 0.10, 0.3, 0.5, 0.7, 1.0]
+SMOOTH          = 0.2
+steer_smooth    = 0.0
+throttle_smooth = 0.0
+scale_smooth    = GEAR_SCALE[1]
+
+# — Camera capture setup —  
+# 0 = default webcam. Change to RTSP/MJPEG URL for IP cams or "http://<phone>:8080/video"
+camera = cv2.VideoCapture("http://100.83.193.15:8080/video") 
+if not camera.isOpened():
+    raise RuntimeError("Could not start camera.")
+
+def gen_frames():
+    """Yield camera frames as multipart MJPEG."""
+    while True:
+        success, frame = camera.read()
+        if not success:
+            break
+        # optionally: resize, flip, overlay etc here
+        ret, buffer = cv2.imencode('.jpg', frame)
+        jpg = buffer.tobytes()
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(
+        gen_frames(),
+        mimetype='multipart/x-mixed-replace; boundary=frame'
+    )
+
+@app.route('/')
+def index():
+    # index.html will embed /video_feed
+    return render_template('index.html')
+
+
+@socketio.on('connect')
+def handle_connect(auth):
+    print(f"[{time.strftime('%H:%M:%S')}] Dashboard connected")
+    socketio.emit('telemetry', {
+        'steering': 90,
+        'throttle': 0,
+        'gear': 1,
+        'speed': 0.0
+    })
+@socketio.on('location')
+def handle_location(data):
+    # data == {'lat':…, 'lng':…}
+    print(f"[{time.strftime('%H:%M:%S')}] 📍 got location:", data)
+    socketio.emit('location', data)
+
+
+@socketio.on('controller_input')
+def handle_input(data):
+    global steer_smooth, throttle_smooth, scale_smooth
+
+    # (your existing smoothing, MQTT publish, telemetry emit…)
+
+    raw_steer = data.get('steering', 0.0)
+    raw_thr   = data.get('throttle', 0.0)
+    raw_brk   = data.get('brake', 0.0)
+    gear      = data.get('gear', 1)
+
+    steer_smooth += SMOOTH * (raw_steer - steer_smooth)
+    angle = int((steer_smooth * 0.5 + 0.5) * 180)
+
+    forward = -raw_brk if raw_brk > 0.1 else raw_thr
+    throttle_smooth += SMOOTH * (forward - throttle_smooth)
+
+    target_scale = GEAR_SCALE[gear]
+    scale_smooth += SMOOTH * (target_scale - scale_smooth)
+
+    pwm = int(throttle_smooth * scale_smooth * 255)
+
+    payload = {'angle': angle,'pwm': pwm,'gear': gear}
+    mqttc.publish(TOPIC_INPUT, json.dumps(payload), qos=0)
+
+    speed = abs(pwm) * 0.2 * gear
+    socketio.emit('telemetry', {
+        'steering': angle,
+        'throttle': pwm,
+        'gear': gear,
+        'speed': round(speed,1)
+    })
+@socketio.on('restart_esp')
+def restart_esp():
+    # your code to reset ESP (e.g. serial command or MQTT)
+    print("ESP restart requested")
+
+@socketio.on('restart_hotspot')
+def restart_hotspot():
+    # your code to cycle the Android hotspot
+    print("Hotspot restart requested")
+
+if __name__ == '__main__':
+    print("Starting server on http://0.0.0.0:5000/")
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+
+    </code></pre>
+  </div>
+</div>
+</div>
+</div>
+<div class="step" onclick="toggleStep(this)">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <h3>Connect the ESP32</h3>
+        <p>Use a micro-USB cable to connect the ESP32 to your computer.</p>
+      </div>
+    </div>
+    <div class="step-drawer">
+      <div class="carousel">
+        <div class="slides">
+          <div class="slide" style="background-image: url('templates/esp.png');"></div>
+          <div class="slide" style="background-image: url('templates/structured_data_logo.png');"></div>
+        </div>
+        <div class="dots">
+          <span onclick="goToSlide(this, 0)" class="dot active"></span>
+          <span onclick="goToSlide(this, 1)" class="dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  function toggleStep(step) {
+step.classList.add("open");
+  }
+
+  function goToSlide(dot, index) {
+    const dots = dot.parentElement.querySelectorAll('.dot');
+    const carousel = dot.closest('.carousel');
+    const slides = carousel.querySelector('.slides');
+
+    slides.style.transform = `translateX(-${index * 100}%)`;
+
+    dots.forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+  }
+</script>
+<script>
+  function openDrawer(stepElement) {
+    stepElement.classList.add("open");
+  }
+</script>
+
+
+</body>
+</html>
