@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RC Car Telemetry Dashboard</title>
+  <style>
+    html, body {
+      margin:0; padding:0;
+      width:100%; height:100%;
+      overflow:hidden;
+      background: #111;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    /* Top bar: time & weather */
+    #top-bar {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 40px;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-sizing: border-box;
+      z-index: 200;
+      font-size: 1.1em;
+    }
+    /* Left telemetry panel */
+    .telemetry-panel {
+      position: relative;
+      top: 60px; left: 5%;
+      transform: translateY(0);
+      text-align: left;
+      z-index: 1;
+    }
+    .telemetry-panel h1 {
+      font-size: 2.5em;
+      color: #4CAF50;
+      margin-bottom: 0.5em;
+    }
+    .telemetry-panel .stat {
+      font-size: 1.8em;
+      margin: 0.3em 0;
+    }
+    .telemetry-panel .gear {
+      font-size: 4.5em;
+      color: #03A9F4;
+      margin: 0.3em 0;
+    }
+    .telemetry-panel .battery, 
+    .telemetry-panel .controller-status {
+      font-size: 1.3em;
+      color: #FFEB3B;
+      margin-top: 0.5em;
+    }
+    .telemetry-panel .controls,
+    .telemetry-panel .controls button,
+    .telemetry-panel .speak-btn {
+      margin-top: 0.5em;
+    }
+    .telemetry-panel button {
+      background: #222;
+      border: 1px solid #555;
+      color: #fff;
+      padding: 0.4em 0.8em;
+      margin-right: 0.5em;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    .telemetry-panel button:hover {
+      background: #333;
+      border-color: #888;
+    }
+    /* Camera bottom-right */
+    .camera-container {
+      position: fixed;
+      bottom: 2%; right: 2%; top: 5%;
+      width: 95%; height: 95%;
+      background: #000;
+      border: 2px solid #444;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+      overflow: hidden;
+      z-index: 0;
+      opacity: 0.95;
+    }
+    .camera-container img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    /* Map top-right */
+    .map-container {
+      position: fixed;
+      top: 60px; right: 2%;
+      width: 30%; height: 30%;
+      background: #000;
+      border: 2px solid #444;
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+      overflow: hidden;
+      z-index: 60;
+      opacity: 0.8;
+    }
+    .map-container iframe {
+      width: 100%; height: 100%;
+      border: none;
+    }
+    .map-container .coords {
+      position: absolute;
+      bottom: 4px; left: 8px;
+      color: #ddd;
+      font-size: 0.9em;
+      text-shadow: 1px 1px 2px #000;
+    }
+  </style>
+
+  <!-- Socket.IO client -->
+  <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div id="top-bar">
+    <div id="time-display">--:--:--</div>
+    <div id="weather">🌤️ --°C</div>
+  </div>
+
+  <!-- Telemetry panel -->
+  <div class="telemetry-panel">
+    <h1>RC Car Telemetry</h1>
+    <div class="stat">Steering: <span id="steer">–</span>°</div>
+    <div class="stat">Throttle: <span id="throttle">–</span></div>
+    <div class="stat">Speed: <span id="speed">–</span> km/h</div>
+    <div class="gear" id="gear">–</div>
+    <div class="battery">Battery: <span id="battery">--</span> V</div>
+    <div class="controller-status">
+      Controller: <span id="controller-status">–</span>
+    </div>
+    <div class="controls">
+      <button id="btnRestartESP">Restart ESP</button>
+      <button id="btnRestartHotspot">Restart Hotspot</button>
+    </div>
+    <div class="speak-btn">
+      <button id="btnSpeakTelemetry">🔊 Speak Telemetry</button>
+    </div>
+  </div>
+
+  <!-- Camera view -->
+  <div class="camera-container">
+    <img id="camera-feed"
+         src="http://100.83.193.15:8080/video"
+         alt="Live camera feed">
+  </div>
+
+  <!-- Map view -->
+  <div class="map-container">
+    <iframe id="map" src="about:blank" title="Live location"></iframe>
+    <div class="coords" id="coords">Waiting for location…</div>
+  </div>
+
+  <script>
+    // 1) Socket.IO
+    const socket = io('http://localhost:5000');
+
+    // 2) Telemetry & controller status
+    let lastTelemetry = {};
+    socket.on('connect', () => {
+      document.getElementById('controller-status').innerText = 'Connected';
+    });
+    socket.on('disconnect', () => {
+      document.getElementById('controller-status').innerText = 'Disconnected';
+    });
+    socket.on('telemetry', data => {
+      lastTelemetry = data;
+      document.getElementById('steer').innerText    = data.steering;
+      document.getElementById('throttle').innerText = data.throttle;
+      document.getElementById('speed').innerText    = data.speed.toFixed(1);
+      document.getElementById('gear').innerText     = data.gear;
+      if (data.battery !== undefined) {
+        document.getElementById('battery').innerText = data.battery.toFixed(1);
+      }
+    });
+
+    // 3) Buttons
+    document.getElementById('btnRestartESP').onclick = () => {
+      socket.emit('restart_esp');
+      alert('Restart ESP requested');
+    };
+    document.getElementById('btnRestartHotspot').onclick = () => {
+      socket.emit('restart_hotspot');
+      alert('Restart Hotspot requested');
+    };
+    document.getElementById('btnSpeakTelemetry').onclick = () => {
+      const d = lastTelemetry;
+      if (!d.steering && !d.throttle) return;
+      const msg = `Steering ${d.steering} degrees, throttle ${d.throttle}, ` +
+                  `speed ${d.speed.toFixed(1)} kilometers per hour, ` +
+                  `gear ${d.gear}`;
+      speechSynthesis.speak(new SpeechSynthesisUtterance(msg));
+    };
+
+    // 4) Clock
+    function updateTime() {
+      const now = new Date();
+      document.getElementById('time-display').innerText =
+        now.toLocaleTimeString();
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // 5) Weather via Open-Meteo (fallback coords 0,0 until first location)
+    let weatherFetched = false;
+    async function fetchWeather(lat, lng) {
+      try {
+        const u = `https://api.open-meteo.com/v1/forecast` +
+                  `?latitude=${lat}&longitude=${lng}` +
+                  `&current_weather=true&timezone=auto`;
+        const res = await fetch(u);
+        const j   = await res.json();
+        const t   = j.current_weather.temperature;
+        document.getElementById('weather').innerText = `🌤️ ${t}°C`;
+      } catch(e) {
+        console.error(e);
+        document.getElementById('weather').innerText = '❓';
+      }
+    }
+
+    // 6) Location → map + weather
+    socket.on('location', loc => {
+      const { lat, lng } = loc;
+      // update map iframe
+      const d = 0.0008;
+      const south = lat - d, north = lat + d;
+      const west  = lng - d, east  = lng + d;
+      const url =
+        'https://www.openstreetmap.org/export/embed.html?' +
+        `bbox=${west},${south},${east},${north}` +
+        '&layer=mapnik' +
+        `&marker=${lat},${lng}`;
+      document.getElementById('map').src = url;
+      document.getElementById('coords').innerText =
+        `Lat ${lat.toFixed(6)}, Lng ${lng.toFixed(6)}`;
+
+      // fetch weather once on first location
+      if (!weatherFetched) {
+        fetchWeather(lat, lng);
+        weatherFetched = true;
+      }
+    });
+  </script>
+</body>
+</html>
