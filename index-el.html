@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Prism VSCode-Like Theme -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="icon" type="image/x-icon" href="templates/imghead.ico">
+    <!-- Prism Core (must load before any language) -->
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <link rel="stylesheet" href="templates/style.css">
+    <title>Παρουσίαση Έργου RC</title>
+    <link type="text/css" rel="stylesheet" charset="UTF-8" href="https://www.gstatic.com/_/translate_http/_/ss/k=translate_http.tr.pgV-E-68K-A.L.W.O/am=AGA/d=0/rs=AN8SPfoc8hDWulOCIcFB3yTCWO1fC63bQw/m=el_main_css">
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html">ΕΝ</a> | <a href="index-el.html">GR</a>
+        </nav>
+        <nav>
+            <a href="#">Αρχική</a>
+            <a href="#">Σχετικά</a>
+            <a href="#">Portfolio</a>
+            <a href="#">Επικοινωνία</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="main"></section>
+            <h1>Τηλεκατευθυνόμενο αυτοκίνητο online</h1>
+            <p>Αυτό το έργο παρουσιάζει την επικοινωνία και τη ροή ισχύος μέσα σε ένα τηλεκατευθυνόμενο όχημα χρησιμοποιώντας ESP32 και έλεγχο κινητήρα χωρίς ψήκτρες.</p>
+        </section>
+        <section class="images"></section>
+            <div class="image-box"><img src="templates/blueprint.PNG" alt="Blueprint"></div>
+            <div class="image-box"><img src="templates/dashboard.png" alt="Dashboard"></div>
+            <div class="image-box"><img src="templates/img.JPEG" alt="RC Car"></div>
+        </section>
+
+        <section style="width: 100%; max-width: 1000px; padding: 40px 20px; box-sizing: border-box;">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; margin-bottom: 40px;"></div>
+                <img src="templates/img.JPEG" alt="Συσκευή 1" style="width: 100%; max-width: 300px; margin-right: 40px; flex-shrink: 0; border: 1px solid #ddd;">
+                <div style="flex: 1; min-width: 200px;">
+                    <h2 style="margin-top: 0;">Εξαρτήματα υλικού</h2>
+                    <p>
+                        - Αυτοκίνητο με τηλεχειριστήριο με κινητήρα χωρίς ψήκτρες και ESC<br>
+                        - Μπαταρία Li-po<br>
+                        - Μικροελεγκτής ESP32<br>
+                        - Κινητό Android
+                    </p>
+                    <h2 style="margin-top: 0;">Λογισμικό</h2>
+                    <p>
+                        - C++ για ESP32<br>
+                        - Python για επικοινωνία backend<br>
+                        - Σχεδιασμός frontend HTML/CSS/JS<br>
+                        - εφαρμογή tailscale για απομακρυσμένη πρόσβαση και εφαρμογή IP Webcam για streaming.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="diagram-section" style="position: relative; height: 800px; background: #fff;">
+            <!-- Component Boxes -->
+            <div class="diagram-box" style="top: 20px; left: 340px;">
+                <h4>Τυπικό αναλογικό σερβο</h4>
+                <img src="templates/servo.png" alt="Σερβο">
+            </div>
+            <div class="diagram-box" style="top: 300px; left: 30px;">
+                <h4>ESP32</h4>
+                <img src="templates/esp.png" alt="ESP32">
+            </div>
+            <div class="diagram-box" style="top: 300px; left: 340px;">
+                <h4>Xiaomi</h4>
+                <img src="templates/android.png" alt="Τηλέφωνο">
+            </div>
+            <div class="diagram-box" style="top: 20px; left: 630px;">
+                <h4>ESC &amp; Κινητήρας</h4>
+                <img src="templates/esc.png" alt="Μοτέρ">
+            </div>
+            <div class="diagram-box" style="top: 300px; left: 630px;">
+                <h4>Μπαταρία Li-Po</h4>
+                <img src="templates/battery.png" alt="Μπαταρία">
+            </div>
+            <!-- SVG Arrows with Text Labels -->
+            <svg width="100%" height="100%" style="position: absolute; top: 0; left: 0; pointer-events: none;" class="animate">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="orange"></polygon>
+                    </marker>
+                </defs>
+                <path id="p1" d="M240,320 C300,300 330,100 380,100"></path>
+                <path id="p2" d="M240,320 C300,320 330,320 380,320"></path>
+                <path id="p3" d="M240,320 C270,350 630,350 630,100"></path>
+                <path id="p4" d="M740,320 C700,300 670,200 670,100"></path>
+                <path id="p5" d="M380,100 C430,100 580,100 630,100"></path>
+                <text></text>
+                    <textPath href="#p1" startOffset="50%">Servo steering Signal</textPath>
+                </text>
+                <text>
+                    <textPath href="#p2" startOffset="50%">Data + Power Transfer</textPath>
+                </text>
+                <text>
+                    <textPath href="#p3" startOffset="50%">Ground Pin</textPath>
+                </text>
+                <text>
+                    <textPath href="#p4" startOffset="50%">Power 7.4V</textPath>
+                </text>
+                <text>
+                    <textPath href="#p5" startOffset="50%">Motor Power</textPath>
+                </text>
+            </svg>
+            <script>
+                const observer = new IntersectionObserver(entries => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            document.querySelector('#diagram-section svg').classList.add('animate');
+                            observer.disconnect();
+                        }
+                    });
+                }, { threshold: 0.3 });
+                observer.observe(document.querySelector('#diagram-section'));
+            </script>
+        </section>
+
+        <section class="steps-section">
+            <h2 class="steps-title">Πώς ταιριάζουν όλα</h2>
+            <div class="step open" onclick="toggleStep(this)">
+                <div class="step-header"></div>
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>ESP32</h3>
+                        <p>
+                            Ένα καλώδιο USB τύπου C χρησιμοποιείται για τη σύνδεση του ESP32 στη συσκευή Android. Η συσκευή υποστηρίζει σύνδεση Wifi,<br>
+                            η οποία είναι συνδεδεμένη στο δίκτυο κινητής τηλεφωνίας. Για τον προγραμματισμό του ESP32 χρησιμοποιείται η γλώσσα προγραμματισμού C++ για Arduino.<br>
+                            Το ESP32 λαμβάνει εντολές και ελέγχει το τιμόνι (Servo) και τον ηλεκτρονικό ελεγκτή ταχύτητας (ESC).
+                        </p>
+                    </div>
+                </div>
+                <div class="step-drawer">
+                    <div class="slide drawer-content">
+                        <pre class="language-cpp" tabindex="0"><code class="language-cpp">
+#include &lt;WiFi.h&gt;
+#include &lt;PubSubClient.h&gt;
+#include &lt;ESP32Servo.h&gt;
+#include &lt;ArduinoJson.h&gt;
+// your home-hotspot or any Internet-connected Wi-Fi
+const char* SSID     = "Redmi10s";
+const char* PASS     = "12345678";
+// public broker
+const char* MQTT_BROKER = "broker.hivemq.com";
+const int   MQTT_PORT   = 1883;
+const char* TOPIC_INPUT = "myrc/car1/input";
+WiFiClient    net;
+PubSubClient  mqtt(net);
+// pins
+const int STEERING_PIN = 18;
+const int ESC_PIN      = 19;
+// servos
+Servo steeringServo, esc;
+// state
+int steeringAngle = 90;
+int throttlePWM   = 0;
+// parse incoming MQTT JSON
+void onMqttMessage(char* topic, byte* payload, unsigned int len) {
+    // copy into a String
+    String msg;
+    for(int i = 0; i &lt; len; i++) msg += (char)payload[i];
+    // expected: {"angle":…, "pwm":…, "gear":…}
+    StaticJsonDocument&lt;200&gt; doc;
+    DeserializationError err = deserializeJson(doc, msg);
+    if(err) {
+        Serial.println("❌ JSON parse failed");
+        return;
+    }
+    steeringAngle = doc["angle"];
+    throttlePWM   = doc["pwm"];
+    Serial.printf("📥 MQTT → angle=%d pwm=%d\n", steeringAngle, throttlePWM);
+}
+void setup() {
+    Serial.begin(115200);
+    WiFi.begin(SSID, PASS);
+    while(WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("\n✅ Wi-Fi up, IP=" + WiFi.localIP().toString());
+    mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+    mqtt.setCallback(onMqttMessage);
+    while(!mqtt.connected()) {
+        Serial.print("⏳ MQTT connecting…");
+        if(mqtt.connect("ESP32RCCar")) {
+            Serial.println("✅");
+        } else {
+            Serial.print(" failed, rc=");
+            Serial.print(mqtt.state());
+            Serial.println(" retrying in 2s");
+            delay(2000);
+        }
+    }
+    mqtt.subscribe(TOPIC_INPUT);
+    Serial.println("🔴 Subscribed to " + String(TOPIC_INPUT));
+    // attach servos/ESC
+    steeringServo.setPeriodHertz(50);
+    esc.setPeriodHertz(50);
+    steeringServo.attach(STEERING_PIN, 500, 2500);
+    esc.attach(ESC_PIN, 1000, 2000);
+    // arm ESC
+    esc.writeMicroseconds(2000); delay(500);
+    esc.writeMicroseconds(1000); delay(500);
+    esc.writeMicroseconds(1500); delay(500);
+}
+void loop() {
+    mqtt.loop();  // pump incoming MQTT
+    // drive
+    steeringServo.write(steeringAngle);
+    int us = map(throttlePWM, -255, 255, 1000, 2000);
+    esc.writeMicroseconds(constrain(us, 1000, 2000));
+}
+</code></pre>
+                    </div>
+                </div>
+                <div class="step-number">2</div>
+                <div class="step-content"></div>
+                    <h3>Εφαρμογές τηλεφώνου</h3>
+                    <p>
+                        Η εφαρμογή IP Webcam χρησιμοποιείται για τη λήψη βίντεο σε πραγματικό χρόνο και τη μετάδοση στην ιστοσελίδα του πίνακα ελέγχου.<br>
+                        Η εφαρμογή Tailscale χρησιμοποιείται τόσο σε υπολογιστή όσο και σε Android, δημιουργώντας μια ασφαλή σύνδεση VPN.
+                    </p>
+                </div>
+                <div class="step-drawer">
+                    <div class="carousel">
+                        <div class="slides">
+                            <div class="slide" style="background-image: url('templates/ipcam.png');">Λογότυπο εφαρμογής κάμερας IP</div>
+                            <div class="slide" style="background-image: url('templates/tailscale.png');">Λογότυπο εφαρμογής Tailscale</div>
+                            <div class="slide" style="background-image: url('templates/cam.png');">Τοποθετείται τηλέφωνο στην πτέρυγα spoiler και η κάμερα μεταδίδει ζωντανά</div>
+                        </div>
+                        <div class="dots">
+                            <span onclick="goToSlide(this, 0)" class="dot active"></span>
+                            <span onclick="goToSlide(this, 1)" class="dot"></span>
+                            <span onclick="goToSlide(this, 2)" class="dot"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Αρχικοποίηση ελέγχου κινητήρα</h3>
+                    <p>Αυτή η εφαρμογή Python Flask παρέχει μια διεπαφή ελέγχου σε πραγματικό χρόνο για ένα τηλεκατευθυνόμενο αυτοκίνητο χρησιμοποιώντας έναν ελεγκτή PS4 🎮 και ένα τηλέφωνο Android ως κάμερα και ως διακομιστή.</p>
+                </div>
+                <div class="step-drawer">
+                    <div class="carousel">
+                        <div class="slides">
+                            <pre class="language-python" tabindex="0"><code class="language-python">
+import os
+import time
+import json
+import eventlet
+eventlet.monkey_patch()
+from flask import render_template
+from flask import Flask, render_template, Response
+from flask_socketio import SocketIO
+import paho.mqtt.client as mqtt
+import cv2    # ← new
+# — Flask / Socket.IO setup —
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'rc-car-secret'
+socketio = SocketIO(
+        app,
+        async_mode='eventlet',
+        cors_allowed_origins="*",
+        logger=True,
+        engineio_logger=True
+)
+@app.route('/phone')
+def phone():
+        # renders the phone broadcaster template
+        return render_template('phone_loc.html')
+# — MQTT setup (unchanged) —
+MQTT_BROKER = os.getenv('MQTT_BROKER', 'broker.hivemq.com')
+MQTT_PORT   = int(os.getenv('MQTT_PORT', '1883'))
+TOPIC_INPUT = 'myrc/car1/input'
+mqttc = mqtt.Client()
+mqttc.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+mqttc.loop_start()
+# — Gear & smoothing (unchanged) —
+GEAR_SCALE      = [0.0, 0.10, 0.3, 0.5, 0.7, 1.0]
+SMOOTH          = 0.2
+steer_smooth    = 0.0
+throttle_smooth = 0.0
+scale_smooth    = GEAR_SCALE[1]
+# — Camera capture setup —  
+# 0 = default webcam. Change to RTSP/MJPEG URL for IP cams or "http://:8080/video"
+camera = cv2.VideoCapture("http://100.83.193.15:8080/video") 
+if not camera.isOpened():
+        raise RuntimeError("Could not start camera.")
+def gen_frames():
+        """Yield camera frames as multipart MJPEG."""
+        while True:
+                success, frame = camera.read()
+                if not success:
+                        break
+                # optionally: resize, flip, overlay etc here
+                ret, buffer = cv2.imencode('.jpg', frame)
+                jpg = buffer.tobytes()
+                yield (b'--frame\r\n'
+                             b'Content-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n')
+@app.route('/video_feed')
+def video_feed():
+        return Response(
+                gen_frames(),
+                mimetype='multipart/x-mixed-replace; boundary=frame'
+        )
+@app.route('/')
+def index():
+        # index.html will embed /video_feed
+        return render_template('index.html')
+@socketio.on('connect')
+def handle_connect(auth):
+        print(f"[{time.strftime('%H:%M:%S')}] Dashboard connected")
+        socketio.emit('telemetry', {
+                'steering': 90,
+                'throttle': 0,
+                'gear': 1,
+                'speed': 0.0
+        })
+@socketio.on('location')
+def handle_location(data):
+        # data == {'lat':…, 'lng':…}
+        print(f"[{time.strftime('%H:%M:%S')}] 📍 got location:", data)
+        socketio.emit('location', data)
+@socketio.on('controller_input')
+def handle_input(data):
+        global steer_smooth, throttle_smooth, scale_smooth
+        # (your existing smoothing, MQTT publish, telemetry emit…)
+        raw_steer = data.get('steering', 0.0)
+        raw_thr   = data.get('throttle', 0.0)
+        raw_brk   = data.get('brake', 0.0)
+        gear      = data.get('gear', 1)
+        steer_smooth += SMOOTH * (raw_steer - steer_smooth)
+        angle = int((steer_smooth * 0.5 + 0.5) * 180)
+        forward = -raw_brk if raw_brk &gt; 0.1 else raw_thr
+        throttle_smooth += SMOOTH * (forward - throttle_smooth)
+        target_scale = GEAR_SCALE[gear]
+        scale_smooth += SMOOTH * (target_scale - scale_smooth)
+        pwm = int(throttle_smooth * scale_smooth * 255)
+        payload = {'angle': angle,'pwm': pwm,'gear': gear}
+        mqttc.publish(TOPIC_INPUT, json.dumps(payload), qos=0)
+        speed = abs(pwm) * 0.2 * gear
+        socketio.emit('telemetry', {
+                'steering': angle,
+                'throttle': pwm,
+                'gear': gear,
+                'speed': round(speed,1)
+        })
+@socketio.on('restart_esp')
+def restart_esp():
+        # your code to reset ESP (e.g. serial command or MQTT)
+        print("ESP restart requested")
+@socketio.on('restart_hotspot')
+def restart_hotspot():
+        # your code to cycle the Android hotspot
+        print("Hotspot restart requested")
+if __name__ == '__main__':
+        print("Starting server on http://0.0.0.0:5000/")
+        socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+                            </code></pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Συνδέστε το ESP32</h3>
+                    <p>Χρησιμοποιήστε ένα καλώδιο micro-USB για να συνδέσετε το ESP32 στον υπολογιστή σας.</p>
+                </div>
+                <div class="step-drawer">
+                    <div class="carousel">
+                        <div class="slides">
+                            <div class="slide" style="background-image: url('templates/esp.png');"></div>
+                            <div class="slide" style="background-image: url('templates/structured_data_logo.png');"></div>
+                        </div>
+                        <div class="dots">
+                            <span onclick="goToSlide(this, 0)" class="dot active"></span>
+                            <span onclick="goToSlide(this, 1)" class="dot"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function toggleStep(step) {
+            step.classList.add("open");
+        }
+        function goToSlide(dot, index) {
+            const dots = dot.parentElement.querySelectorAll('.dot');
+            const carousel = dot.closest('.carousel');
+            const slides = carousel.querySelector('.slides');
+            slides.style.transform = `translateX(-${index * 100}%)`;
+            dots.forEach(d => d.classList.remove('active'));
+            dot.classList.add('active');
+        }
+    </script>
+</body>
+</html>
