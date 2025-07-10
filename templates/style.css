@@ -251,7 +251,7 @@ svg text {
 
 .slide {
   flex: 0 0 100%;
-  background-size: contain;
+  background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
   border-top: 1px solid #ddd;
