@@ -50,10 +50,14 @@
       <img src="templates/img.JPEG" alt="Device 1" style="width: 100%; max-width: 300px; margin-right: 40px; flex-shrink: 0; border: 1px solid #ddd;" />
       <div style="flex: 1; min-width: 200px;">
         <h2 style="margin-top: 0;">Hardware Parts</h2>
-        <p>-RC Car with brushless motor and ESC<br>
-        -Li-po battery<br>
-      -ESP32 Microcontroller <br>
-    -Android phone</p>
+        <div style="background: #222; color: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 18px 20px; margin-top: 10px; border: 1px solid #444;">
+          <ul style="list-style: none; padding: 0; margin: 0;">
+        <li style="margin-bottom: 8px;">🚗 RC Car with brushless motor & ESC</li>
+        <li style="margin-bottom: 8px;">🔋 Li-po battery</li>
+        <li style="margin-bottom: 8px;">🟦 ESP32 Microcontroller</li>
+        <li>📱 Android phone</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -61,15 +65,18 @@
       <img src="templates/screen.png" alt="Device 2" style="width: 100%; max-width: 300px; margin-right: 40px; flex-shrink: 0; border: 1px solid #ddd;" />
       <div style="flex: 1; min-width: 200px;">
         <h2 style="margin-top: 0;">Software</h2>
-        <p> - C++ for ESP32<br>
-        - Python for backend communication<br>
-      - HTML/CSS/JS frontend design<br></p>
-      -tailscale app for remote access & IP Webcam app for streaming.
-      </div>
-    </div>
+        <ul style="margin: 0 0 10px 0; padding-left: 20px; color: #eee;">
+          <li>🟦 C++ for ESP32 microcontroller</li>
+          <li>🐍 Python for backend communication</li>
+          <li>🌐 HTML, CSS, and JavaScript for frontend dashboard</li>
+          <li>🔒 Tailscale app for secure remote access</li>
+          <li>📹 IP Webcam app for live video streaming</li>
+        </ul>
+            </div>
+        </div>
 
 <section id="diagram-section" style="position: relative; height: 800px; background: #fff;">
-  <
+  
 
   <!-- Component Boxes -->
   <div class="diagram-box" style="top: 20px; left: 340px;">
@@ -440,11 +447,11 @@ if __name__ == '__main__':
 </div>
 <div class="step" onclick="toggleStep(this)">
     <div class="step-header">
-      <div class="step-number">1</div>
+      <div class="step-number">4</div>
       <div class="step-content">
-        <h3>Connect the ESP32</h3>
-        <p>Use a micro-USB cable to connect the ESP32 to your computer.</p>
-      </div>
+        <h3>Activating RC</h3>
+<p>We start broadcasting through the IP Webcam application. The mobile phone is placed on the spoiler and is connected to the ESP32. Since everything is ready, we open the remote control. We run the scripts <code>app.py</code> and <code>ps4controller.py</code> in Visual Studio and then we enter the dashboard page.</p>
+</div>
     </div>
     <div class="step-drawer">
       <div class="carousel">
@@ -483,6 +490,32 @@ step.classList.add("open");
   }
 </script>
 
+<script>
+  // Open modal when image is clicked
+  document.querySelectorAll('.image-box img').forEach(img => {
+    img.style.cursor = "pointer";
+    img.onclick = function() {
+      document.getElementById('img-modal').style.display = "block";
+      document.getElementById('modal-img').src = this.src;
+      document.getElementById('modal-img').alt = this.alt;
+    }
+  });
 
+  // Close modal
+  function closeModal() {
+    document.getElementById('img-modal').style.display = "none";
+  }
+
+  // Optional: close modal when clicking outside the image
+  document.getElementById('img-modal').onclick = function(e) {
+    if (e.target === this) closeModal();
+  }
+</script>
+
+<!-- Add this before </body> -->
+<div id="img-modal" class="img-modal" style="display:none;">
+  <span class="close" onclick="closeModal()">&times;</span>
+  <img class="img-modal-content" id="modal-img">
+</div>
 </body>
 </html>
