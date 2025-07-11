@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head><meta charset="utf-8"><title>Phone GPS Broadcaster</title></head>
+  <body style="text-align:center;font-family:sans-serif;padding:2em;">
+    <h1>Phone → Dashboard GPS</h1>
+    <p>Grant location when prompted, then let it run.</p>
+
+    <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+    <script>
+      // ← point at your PC’s Tailscale IP where server.py is running
+      const SERVER = 'http://100.83.193.15:5000';
+      const socket = io(SERVER, { transports:['websocket'] });
+
+      socket.on('connect', () =>
+        console.log('📶 Phone connected to', SERVER)
+      );
+      socket.on('disconnect', () =>
+        console.log('📴 Phone disconnected')
+      );
+
+      // broadcast GPS every 2 seconds
+      setInterval(() => {
+        navigator.geolocation.getCurrentPosition(pos => {
+          const loc = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude
+          };
+          console.log('🔴 Emitting location', loc);
+          socket.emit('location', loc);
+        }, err => console.error('GPS error', err));
+      }, 2000);
+    </script>
+  </body>
+</html>
