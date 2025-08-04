@@ -76,7 +76,7 @@
         </div>
 
 <section id="diagram-section" style="position: relative; height: 800px; background: #fff;">
-  
+  <div>
 
   <!-- Component Boxes -->
   <div class="diagram-box" style="top: 20px; left: 340px;">
@@ -103,25 +103,7 @@
     <h4>Li-Po Battery</h4>
     <img src="templates/battery.png" alt="Battery">
   </div>
-
-
-
-
-   
-
-  <!-- Scroll-triggered Animation -->
-  <script>
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          document.querySelector('#diagram-section svg').classList.add('animate');
-          observer.disconnect();
-        }
-      });
-    }, { threshold: 0.3 });
-
-    observer.observe(document.querySelector('#diagram-section'));
-  </script>
+</div>
 </section>
 <section class="steps-section">
   <h2 class="steps-title">How all fit in</h2>
