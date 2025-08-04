@@ -118,7 +118,9 @@ nav a {
 /* Diagram Section */
 .diagram-box {
   position: absolute;
-  width: 200px;
+  /* use a relative width capped at 200px */
+  width: 25vw;
+  max-width: 200px;
   padding: 10px;
   border: 2px solid #ccc;
   border-radius: 8px;
@@ -127,10 +129,27 @@ nav a {
   box-shadow: 0 0 6px rgba(0,0,0,0.05);
 }
 
+/* fluid image sizing */
 .diagram-box img {
-  width: 100px;
+  display: block;
+  width: 80%;
+  max-width: 100px;
+  height: auto;
   margin: 10px auto;
 }
+
+/* on very narrow screens, shrink container & image further */
+@media screen and (max-width: 480px) {
+  .diagram-box {
+    width: 40vw;        /* narrower box */
+    max-width: 150px;
+  }
+  .diagram-box img {
+    width: 70%;
+    max-width: 80px;    /* even smaller images */
+  }
+}
+
 
 /* Make SVG scale to phone widths */
 svg {
