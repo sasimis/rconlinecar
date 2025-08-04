@@ -73,9 +73,6 @@
     </div>
     </div>
 
-<section id="diagram-section" style="position: relative; height: 800px; background: #fff;">
-
-
   <!-- Component Boxes -->
   <div class="diagram-box" style="top: 20px; left: 340px;">
     <h4> Τυπικό Αναλογικό Σερβο</h4>
@@ -110,44 +107,6 @@
       </marker>
     </defs>
 
-    <path id="p1" d="M240,320 C300,300 330,100 380,100" />
-    <path id="p2" d="M240,320 C300,320 330,320 380,320" />
-    <path id="p3" d="M240,320 C270,350 630,350 630,100" />
-    <path id="p4" d="M740,320 C700,300 670,200 670,100" />
-    <path id="p5" d="M380,100 C430,100 580,100 630,100" />
-
-    <!-- Labels -->
-    <text>
-      <textPath href="#p1" startOffset="50%">Σήμα διεύθυνσης σέρβο</textPath>
-    </text>
-    <text>
-      <textPath href="#p2" startOffset="50%">Μεταφορά δεδομένων</textPath>
-    </text>
-    <text>
-      <textPath href="#p3" startOffset="50%">Pin Γείωσης</textPath>
-    </text>
-    <text>
-      <textPath href="#p4" startOffset="50%">Ισχύς 7.4V</textPath>
-    </text>
-    <text>
-      <textPath href="#p5" startOffset="50%">Ισχύς κινητήρα</textPath>
-    </text>
-  </svg>
-
-  <!-- Scroll-triggered Animation -->
-  <script>
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          document.querySelector('#diagram-section svg').classList.add('animate');
-          observer.disconnect();
-        }
-      });
-    }, { threshold: 0.3 });
-
-    observer.observe(document.querySelector('#diagram-section'));
-  </script>
-</section>
 <section class="steps-section">
   <h2 class="steps-title">Πως ταιριάζουν όλα</h2>
 
@@ -517,5 +476,9 @@ step.classList.add("open");
     if (e.target === this) closeModal();
   }
 </script>
+     <p>
+      Created with ❤️ by <a href="https://www.instagram.com/stratakosmc/?hl=el" target="_blank" style="color:#1DA1F2; text-decoration:none;">@stratakosmc</a><br>
+      Source code on <a href="https://github.com/sasimis/rconlinecar" target="_blank" style="color:#6cc644; text-decoration:none;">GitHub</a>
+    </p>
 </body>
 </html>
