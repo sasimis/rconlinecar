@@ -132,12 +132,21 @@ nav a {
   margin: 10px auto;
 }
 
+/* Make SVG scale to phone widths */
+svg {
+  width: 100%;
+  height: auto;
+}
+
+/* Base styles for all browsers */
 svg path {
   stroke: orange;
   stroke-width: 3;
   fill: none;
   stroke-dasharray: 1000;
   stroke-dashoffset: 1000;
+  /* both filter declarations for max compatibility */
+  -webkit-filter: drop-shadow(0 0 5px orange);
   filter: drop-shadow(0 0 5px orange);
   opacity: 0.8;
   marker-end: url(#arrowhead);
@@ -151,14 +160,34 @@ svg text {
   dominant-baseline: middle;
 }
 
+/* Animation class — WebKit + standard */
 .animate path {
-  animation: draw 2s forwards ease-out;
+  -webkit-animation: draw 2s forwards ease-out;
+  animation:       draw 2s forwards ease-out;
 }
 
+/* WebKit keyframes */
+@-webkit-keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+    -webkit-filter: drop-shadow(0 0 8px orange) brightness(1.2);
+            filter: drop-shadow(0 0 8px orange) brightness(1.2);
+  }
+}
+
+/* Standard keyframes */
 @keyframes draw {
   to {
     stroke-dashoffset: 0;
-    filter: drop-shadow(0 0 8px orange) brightness(1.2);
+    -webkit-filter: drop-shadow(0 0 8px orange) brightness(1.2);
+            filter: drop-shadow(0 0 8px orange) brightness(1.2);
+  }
+}
+
+/* Optional: tweak stroke width on very small phones */
+@media screen and (max-width: 480px) {
+  svg path {
+    stroke-width: 2;
   }
 }
 
