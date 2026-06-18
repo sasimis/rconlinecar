@@ -1,9 +1,10 @@
+import eventlet
+eventlet.monkey_patch()
+
 import os
 import time
 import json
 import threading
-import eventlet
-eventlet.monkey_patch()
 
 from flask import Flask, render_template, Response
 from flask_socketio import SocketIO
@@ -42,36 +43,11 @@ throttle_smooth = 0.0
 scale_smooth    = GEAR_SCALE[1]
 
 # — Camera URL (configurable via env, no crash if unavailable) —
-CAMERA_URL = os.getenv('CAMERA_URL', 'http://100.83.193.15:8080/video')
+CAMERA_URL = os.getenv('CAMERA_URL', 'http://10.212.49.6:8080/video')
 
-# — Lock for thread-safe camera access —
-_camera_lock = threading.Lock()
-_camera = None
-
-def _open_camera():
-    """Open camera with retry. Returns None on failure (non-blocking)."""
-    global _camera
-    cap = cv2.VideoCapture(CAMERA_URL)
-    if cap.isOpened():
-        with _camera_lock:
-            if _camera is not None:
-                _camera.release()
-            _camera = cap
-        print(f"[{time.strftime('%H:%M:%S')}] 📷 Camera connected: {CAMERA_URL}")
-        return True
-    cap.release()
-    print(f"[{time.strftime('%H:%M:%S')}] ⚠️  Camera unreachable: {CAMERA_URL}")
-    return False
-
-def _close_camera():
-    global _camera
-    with _camera_lock:
-        if _camera is not None:
-            _camera.release()
-            _camera = None
-
-# Attempt initial camera connection (non-fatal)
-_open_camera()
+print(f"📷 Camera configured: {CAMERA_URL}")
+print(f"   To change: set environment variable CAMERA_URL, or modify app.py default")
+print(f"   ℹ️  Camera connects on demand (when /video_feed is requested)")
 
 def gen_frames():
     """Yield camera frames as multipart MJPEG.
@@ -153,9 +129,8 @@ def handle_connect(auth):
             socketio.emit('location', _last_location)
             print(f"[{time.strftime('%H:%M:%S')}]   ↳ Sent last location to new client")
 
-    # tell dashboard whether camera is alive
-    ok = _camera is not None and _camera.isOpened()
-    socketio.emit('camera_status', {'online': ok})
+    # camera status is determined when /video_feed is requested
+    socketio.emit('camera_status', {'online': 'checking'})
 
 @socketio.on('location')
 def handle_location(data):

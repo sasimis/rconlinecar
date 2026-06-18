@@ -14,7 +14,7 @@ time.sleep(1)
 print("— OK, now move sticks/triggers and watch the live debug below —")
 
 sio = socketio.Client()
-sio.connect('http://localhost:5000', transports=['websocket'])
+sio.connect('http://localhost:5002', transports=['websocket'])
 print("Connected, SID:", sio.sid)
 
 gear = 1; MAX_GEAR=5

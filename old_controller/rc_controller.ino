@@ -24,7 +24,6 @@ Servo steeringServo, esc;
 int  steeringAngle = 90;
 int  throttlePWM   = 0;
 bool restartPending = false;
-unsigned long lastReconnectAttempt = 0;
 
 // ===== FORWARD DECLARATIONS =====
 void connectWiFi();
@@ -32,31 +31,33 @@ void connectMQTT();
 void onMqttMessage(char* topic, byte* payload, unsigned int len);
 
 // ================================================================
-//                    MQTT CALLBACK (OPTIMIZED)
+//                    MQTT CALLBACK
 // ================================================================
 void onMqttMessage(char* topic, byte* payload, unsigned int len) {
-  // 1. Instantly parse JSON into a shared document to avoid doing it twice
-  StaticJsonDocument<256> doc;
-  DeserializationError err = deserializeJson(doc, payload, len); // Pass payload directly, no String copy
-  
-  if (err) {
-    return; // Silently drop bad packets to save CPU time
+  String msg;
+  for(unsigned int i = 0; i < len; i++) msg += (char)payload[i];
+
+  // --- Check for restart command ---
+  if (strcmp(topic, TOPIC_RESTART) == 0) {
+    StaticJsonDocument<128> doc;
+    DeserializationError err = deserializeJson(doc, msg);
+    if (!err && doc["cmd"] == "restart") {
+      Serial.println("🔄 Restart command received — rebooting in 1s...");
+      restartPending = true;
+      return;
+    }
   }
 
-  // 2. Isolate logic strictly by topic string comparison
-  if (strcmp(topic, TOPIC_RESTART) == 0) {
-    if (doc["cmd"] == "restart") {
-      Serial.println("🔄 Restart command received — rebooting...");
-      restartPending = true;
-    }
+  // --- Normal drive command ---
+  StaticJsonDocument<200> doc;
+  DeserializationError err = deserializeJson(doc, msg);
+  if (err) {
+    Serial.println("❌ JSON parse failed");
     return;
   }
-
-  if (strcmp(topic, TOPIC_INPUT) == 0) {
-    steeringAngle = doc["angle"];
-    throttlePWM   = doc["pwm"];
-    // Removed Serial.printf to prevent hardware transmission lag
-  }
+  steeringAngle = doc["angle"];
+  throttlePWM   = doc["pwm"];
+  Serial.printf("📥 MQTT → angle=%d pwm=%d\n", steeringAngle, throttlePWM);
 }
 
 // ================================================================
@@ -64,16 +65,17 @@ void onMqttMessage(char* topic, byte* payload, unsigned int len) {
 // ================================================================
 void connectWiFi() {
   if (WiFi.status() == WL_CONNECTED) return;
+
   Serial.printf("\n📡 Connecting to Wi-Fi: %s ", SSID);
   WiFi.begin(SSID, PASS);
 
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED) {
-    delay(100); // Reduced delay for faster initial boot check
+    delay(500);
     Serial.print(".");
     attempts++;
-    if (attempts > 100) {  // 10 seconds timeout
-      Serial.println("\n⚠️  Wi-Fi timeout — retrying in loop...");
+    if (attempts > 40) {  // 20 seconds timeout
+      Serial.println("\n⚠️  Wi-Fi timeout — will retry in loop()");
       return;
     }
   }
@@ -81,21 +83,19 @@ void connectWiFi() {
 }
 
 // ================================================================
-//                    MQTT CONNECTION (NON-BLOCKING RETRY)
+//                    MQTT CONNECTION
 // ================================================================
 void connectMQTT() {
   if (mqtt.connected()) return;
-  
+
   Serial.print("⏳ MQTT connecting...");
-  // Use a unique client ID to prevent broker kick-offs
-  String clientId = "ESP32RCCar-" + String(random(0, 10000));
-  
-  if (mqtt.connect(clientId.c_str())) {
-    Serial.println("✅ Connected!");
-    mqtt.subscribe(TOPIC_INPUT, 0);   // Explicitly Force QoS 0 for instant processing
-    mqtt.subscribe(TOPIC_RESTART, 0); // Explicitly Force QoS 0
+  if (mqtt.connect("ESP32RCCar")) {
+    Serial.println("✅");
+    mqtt.subscribe(TOPIC_INPUT);
+    mqtt.subscribe(TOPIC_RESTART);
+    Serial.printf("🔴 Subscribed to %s, %s\n", TOPIC_INPUT, TOPIC_RESTART);
   } else {
-    Serial.printf(" failed (rc=%d)\n", mqtt.state());
+    Serial.printf(" failed (rc=%d), retrying...\n", mqtt.state());
   }
 }
 
@@ -104,7 +104,7 @@ void connectMQTT() {
 // ================================================================
 void setup() {
   Serial.begin(115200);
-  delay(250);
+  delay(500);
 
   connectWiFi();
 
@@ -130,38 +130,34 @@ void setup() {
 //                    MAIN LOOP
 // ================================================================
 void loop() {
+  // --- Handle pending restart ---
   if (restartPending) {
-    delay(500);
+    delay(1000);
     ESP.restart();
   }
 
-  // --- Non-blocking Connection Handler ---
-  unsigned long now = millis();
+  // --- Maintain Wi-Fi (auto-reconnects if dropped) ---
   if (WiFi.status() != WL_CONNECTED) {
-    // Try reconnecting without stopping the entire code loop execution permanently
-    if (now - lastReconnectAttempt > 5000) {
-      lastReconnectAttempt = now;
-      connectWiFi();
-    }
-    return; 
+    connectWiFi();
+    delay(500);
+    return;  // skip MQTT/drive until Wi-Fi is back
   }
 
+  // --- Maintain MQTT (auto-reconnects if dropped) ---
   if (!mqtt.connected()) {
-    if (now - lastReconnectAttempt > 3000) {
-      lastReconnectAttempt = now;
-      connectMQTT();
-    }
-    return;
+    connectMQTT();
+    delay(500);
+    return;  // skip drive until MQTT is back
   }
 
   // --- Process incoming MQTT messages ---
   mqtt.loop();
 
-  // --- Write Actuator Outputs ---
+  // --- Drive ---
   steeringServo.write(steeringAngle);
   int us = map(throttlePWM, -255, 255, 1000, 2000);
   esc.writeMicroseconds(constrain(us, 1000, 2000));
 
-  // Minimum required yield background time
-  delay(10);
+  // --- Yield to background tasks + reduce jitter ---
+  delay(20);
 }
