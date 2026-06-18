@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RC Car Telemetry Dashboard</title>
+  <style>
+    html, body {
+      margin:0; padding:0;
+      width:100%; height:100%;
+      overflow:hidden;
+      background: #111;
+      color: #fff;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    #top-bar {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 40px;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      box-sizing: border-box;
+      z-index: 200;
+      font-size: 1.1em;
+    }
+    .telemetry-panel {
+      position: relative;
+      top: 60px; left: 2%;
+      transform: translateY(0);
+      text-align: left;
+      z-index: 1;
+      width: 280px;
+    }
+    .telemetry-panel h1 {
+      font-size: 1.8em;
+      color: #4CAF50;
+      margin-bottom: 0.3em;
+    }
+    .telemetry-panel .stat {
+      font-size: 1.4em;
+      margin: 0.2em 0;
+    }
+    .telemetry-panel .gear {
+      font-size: 3em;
+      color: #03A9F4;
+      margin: 0.2em 0;
+    }
+    .telemetry-panel .battery, 
+    .telemetry-panel .controller-status {
+      font-size: 1.1em;
+      color: #FFEB3B;
+      margin-top: 0.3em;
+    }
+    .telemetry-panel button {
+      background: #222;
+      border: 1px solid #555;
+      color: #fff;
+      padding: 0.4em 0.8em;
+      margin-right: 0.3em;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    .telemetry-panel button:hover {
+      background: #333;
+      border-color: #888;
+    }
+    .camera-container {
+      position: fixed;
+      bottom: 2%; right: 2%;
+      width: 65%; height: 55%;
+      background: #000;
+      border: 2px solid #444;
+      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+      overflow: hidden;
+      z-index: 0;
+      opacity: 0.95;
+    }
+    .camera-container img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .map-container {
+      position: fixed;
+      top: 55px; right: 2%;
+      width: 30%; height: 35%;
+      background: #000;
+      border: 2px solid #444;
+      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+      overflow: hidden;
+      z-index: 60;
+      opacity: 0.85;
+    }
+    .map-container iframe {
+      width: 100%; height: 100%;
+      border: none;
+    }
+    .map-overlay {
+      position: absolute;
+      bottom: 4px; left: 8px;
+      color: #ddd;
+      font-size: 0.8em;
+      text-shadow: 1px 1px 2px #000;
+      z-index: 61;
+      pointer-events: none;
+    }
+    .map-overlay .gps-acc { color: #FFEB3B; }
+    .map-overlay .track-status { color: #4CAF50; }
+    .map-overlay .coords { color: #03A9F4; }
+    #gps-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .gps-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+    .gps-dot.green { background: #4CAF50; box-shadow: 0 0 6px #4CAF50; }
+    .gps-dot.yellow { background: #FFEB3B; box-shadow: 0 0 6px #FFEB3B; }
+    .gps-dot.red { background: #f44336; box-shadow: 0 0 6px #f44336; }
+    .gps-dot.gray { background: #555; }
+    #loc-log-toggle {
+      position: fixed;
+      bottom: 2%; left: 2%;
+      z-index: 100;
+      background: #1a1a1a;
+      border: 1px solid #444;
+      color: #aaa;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-size: 0.8em;
+      opacity: 0.6;
+    }
+    #loc-log-toggle:hover { opacity: 1; }
+    #loc-log {
+      position: fixed;
+      bottom: 40px; left: 2%;
+      width: 280px;
+      max-height: 150px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.85);
+      border: 1px solid #333;
+      padding: 6px 10px;
+      z-index: 99;
+      font-family: monospace;
+      font-size: 0.7em;
+      color: #888;
+      display: none;
+    }
+    #loc-log.visible { display: block; }
+    #loc-log div { padding: 1px 0; }
+    #loc-log .latest { color: #4CAF50; }
+    #conn-stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+  <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+</head>
+<body>
+  <div id="top-bar">
+    <div id="conn-stat">
+      <span class="gps-dot gray" id="server-dot"></span>
+      <span id="server-status">Connecting...</span>
+    </div>
+    <div id="gps-indicator">
+      <span class="gps-dot gray" id="gps-dot"></span>
+      <span id="gps-status">No GPS</span>
+    </div>
+    <div id="time-display">--:--:--</div>
+    <div id="weather">🌤️ --°C</div>
+  </div>
+  <div class="telemetry-panel">
+    <h1>RC Car Telemetry</h1>
+    <div class="stat">Steering: <span id="steer">–</span>°</div>
+    <div class="stat">Throttle: <span id="throttle">–</span></div>
+    <div class="stat">Speed: <span id="speed">–</span> km/h</div>
+    <div class="gear" id="gear">–</div>
+    <div class="battery">Battery: <span id="battery">--</span> V</div>
+    <div class="controller-status">
+      Controller: <span id="controller-status">–</span>
+    </div>
+    <div class="controls">
+      <button id="btnRestartESP">Restart ESP</button>
+      <button id="btnRestartHotspot">Restart Hotspot</button>
+    </div>
+    <div class="speak-btn">
+      <button id="btnSpeakTelemetry">🔊 Speak Telemetry</button>
+    </div>
+  </div>
+  <div class="camera-container">
+    <img id="camera-feed"
+         src="http://100.83.193.15:8080/video"
+         alt="Live camera feed">
+  </div>
+  <div class="map-container">
+    <iframe id="map" src="about:blank" title="Live location"></iframe>
+    <div class="map-overlay" id="mapOverlay">
+      <div class="coords" id="coords">Waiting for GPS…</div>
+      <div class="gps-acc" id="accDisplay"></div>
+      <div class="track-status" id="trackPoints">Track: 0 pts</div>
+    </div>
+  </div>
+  <button id="loc-log-toggle">📍 Location log</button>
+  <div id="loc-log"></div>
+  <script>
+    (function() {
+      'use strict';
+      const SOCKET_SERVER = 'http://localhost:5002';
+      const MAX_TRACK_POINTS = 200;
+      const $ = id => document.getElementById(id);
+      const steer = $('steer'), throttle = $('throttle'), speed = $('speed');
+      const gearEl = $('gear'), battery = $('battery'), ctrlStatus = $('controller-status');
+      const serverDot = $('server-dot'), serverStatus = $('server-status');
+      const gpsDot = $('gps-dot'), gpsStatus = $('gps-status');
+      const mapIframe = $('map'), coords = $('coords'), accDisplay = $('accDisplay');
+      const trackPoints = $('trackPoints'), locLog = $('loc-log'), locLogToggle = $('loc-log-toggle');
+      const timeDisplay = $('time-display'), weatherEl = $('weather');
+      let lastTelemetry = {}, lastLocation = null, locationHistory = [], weatherFetched = false;
+      const socket = io(SOCKET_SERVER, { transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000 });
+      socket.on('connect', () => { serverDot.className = 'gps-dot green'; serverStatus.textContent = 'Connected'; ctrlStatus.innerText = 'Connected'; });
+      socket.on('disconnect', () => { serverDot.className = 'gps-dot red'; serverStatus.textContent = 'Disconnected'; ctrlStatus.innerText = 'Disconnected'; });
+      socket.on('connect_error', () => { serverDot.className = 'gps-dot gray'; serverStatus.textContent = 'Connection error'; });
+      socket.on('telemetry', data => {
+        lastTelemetry = data;
+        steer.innerText = data.steering; throttle.innerText = data.throttle;
+        speed.innerText = data.speed.toFixed(1); gearEl.innerText = data.gear;
+        if (data.battery !== undefined) battery.innerText = data.battery.toFixed(1);
+      });
+      $('btnRestartESP').onclick = () => { socket.emit('restart_esp'); alert('Restart ESP requested'); };
+      $('btnRestartHotspot').onclick = () => { socket.emit('restart_hotspot'); alert('Restart Hotspot requested'); };
+      $('btnSpeakTelemetry').onclick = () => {
+        const d = lastTelemetry;
+        if (!d.steering && !d.throttle) return;
+        speechSynthesis.speak(new SpeechSynthesisUtterance(
+          `Steering ${d.steering} degrees, throttle ${d.throttle}, speed ${d.speed.toFixed(1)} kilometers per hour, gear ${d.gear}`
+        ));
+      };
+      function updateTime() { timeDisplay.innerText = new Date().toLocaleTimeString(); }
+      setInterval(updateTime, 1000); updateTime();
+      async function fetchWeather(lat, lng) {
+        try {
+          const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true&timezone=auto`);
+          const j = await r.json();
+          weatherEl.innerText = `🌤️ ${j.current_weather.temperature}°C`;
+        } catch(e) { weatherEl.innerText = '❓'; }
+      }
+      function buildMapUrl(lat, lng, trail) {
+        const allPts = trail.length > 0 ? trail : [{lat, lng}];
+        let minLat=Infinity, maxLat=-Infinity, minLng=Infinity, maxLng=-Infinity;
+        allPts.forEach(p => { if(p.lat<minLat)minLat=p.lat; if(p.lat>maxLat)maxLat=p.lat; if(p.lng<minLng)minLng=p.lng; if(p.lng>maxLng)maxLng=p.lng; });
+        const pad=0.0005;
+        let extra = `&marker=${lat},${lng}`;
+        if(trail.length>=2) extra = `&marker=${lat},${lng}&c=path:${trail.map(p=>`${p.lat},${p.lng}`).join(',')}`;
+        return `https://www.openstreetmap.org/export/embed.html?bbox=${minLng-pad},${minLat-pad},${maxLng+pad},${maxLat+pad}&layer=mapnik${extra}`;
+      }
+      socket.on('location', loc => {
+        const {lat, lng, accuracy: acc} = loc;
+        lastLocation = loc;
+        const a = acc||50;
+        if(a<=10){gpsDot.className='gps-dot green';gpsStatus.textContent='GPS Excellent';}
+        else if(a<=25){gpsDot.className='gps-dot yellow';gpsStatus.textContent='GPS Fair';}
+        else if(a<=50){gpsDot.className='gps-dot red';gpsStatus.textContent='GPS Weak';}
+        else{gpsDot.className='gps-dot gray';gpsStatus.textContent='No GPS';}
+        locationHistory.push({lat,lng});
+        if(locationHistory.length>MAX_TRACK_POINTS) locationHistory=locationHistory.slice(-MAX_TRACK_POINTS);
+        mapIframe.src = buildMapUrl(lat, lng, locationHistory);
+        coords.innerText = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        accDisplay.innerText = a>0 ? `±${a.toFixed(0)}m` : '';
+        trackPoints.innerText = `Track: ${locationHistory.length} pts`;
+        if(locLog.classList.contains('visible')){
+          const e=document.createElement('div'); e.className='latest';
+          e.textContent=`[${new Date().toLocaleTimeString()}] ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+          const p=locLog.querySelector('.latest'); if(p)p.className='';
+          locLog.insertBefore(e, locLog.firstChild);
+          while(locLog.children.length>50) locLog.removeChild(locLog.lastChild);
+        }
+        if(!weatherFetched){fetchWeather(lat,lng);weatherFetched=true;}
+      });
+      locLogToggle.addEventListener('click', () => {
+        locLog.classList.toggle('visible');
+        locLogToggle.textContent = locLog.classList.contains('visible') ? '📍 Hide log' : '📍 Location log';
+      });
+      setInterval(() => { if(!socket.connected){serverDot.className='gps-dot red';serverStatus.textContent='Disconnected';} }, 5000);
+    })();
+  </script>
+</body>
+</html>

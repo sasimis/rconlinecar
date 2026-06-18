@@ -21,6 +21,10 @@ socketio = SocketIO(
     engineio_logger=True
 )
 
+# — Last-known GPS location (shared across all clients) —
+_last_location = None
+_last_location_lock = threading.Lock()
+
 # — MQTT setup —
 MQTT_BROKER = os.getenv('MQTT_BROKER', 'broker.hivemq.com')
 MQTT_PORT   = int(os.getenv('MQTT_PORT', '1883'))
@@ -125,6 +129,10 @@ def video_feed():
 def phone():
     return render_template('phone_loc.html')
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('Dashboard.html')
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -139,14 +147,32 @@ def handle_connect(auth):
         'gear': 1,
         'speed': 0.0
     })
+    # Send last-known GPS location immediately so the map shows something
+    with _last_location_lock:
+        if _last_location is not None:
+            socketio.emit('location', _last_location)
+            print(f"[{time.strftime('%H:%M:%S')}]   ↳ Sent last location to new client")
+
     # tell dashboard whether camera is alive
     ok = _camera is not None and _camera.isOpened()
     socketio.emit('camera_status', {'online': ok})
 
 @socketio.on('location')
 def handle_location(data):
-    print(f"[{time.strftime('%H:%M:%S')}] 📍 location: {data}")
-    socketio.emit('location', data)
+    # Persist the location server-side
+    with _last_location_lock:
+        _last_location = {
+            'lat': data.get('lat'),
+            'lng': data.get('lng'),
+            'accuracy': data.get('accuracy', 0),
+            'altitude': data.get('altitude', 0),
+            'speed': data.get('speed', 0),
+            'heading': data.get('heading', 0)
+        }
+    print(f"[{time.strftime('%H:%M:%S')}] 📍 location: lat={_last_location['lat']:.6f}, "
+          f"lng={_last_location['lng']:.6f}, acc={_last_location['accuracy']}m")
+    # Broadcast to all connected dashboards
+    socketio.emit('location', _last_location)
 
 
 @socketio.on('controller_input')
@@ -199,5 +225,6 @@ def restart_hotspot():
 
 
 if __name__ == '__main__':
-    print("Starting server on http://0.0.0.0:5000/")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5002))
+    print(f"Starting server on http://0.0.0.0:{port}/")
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, use_reloader=False)

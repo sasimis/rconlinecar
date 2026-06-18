@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>RC Car GPS Tracker</title>
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      html, body {
+        width: 100%; height: 100%;
+        background: #111;
+        color: #fff;
+        font-family: 'Segoe UI', sans-serif;
+        overflow: hidden;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 20px;
+        text-align: center;
+      }
+      h1 { font-size: 1.8em; margin-bottom: 0.3em; color: #4CAF50; }
+      .subtitle { font-size: 0.9em; color: #888; margin-bottom: 2em; }
+
+      .status-card {
+        background: #1a1a1a;
+        border: 2px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        width: 100%;
+        max-width: 400px;
+        margin-bottom: 16px;
+      }
+      .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #222;
+        font-size: 1em;
+      }
+      .status-row:last-child { border-bottom: none; }
+      .label { color: #888; }
+      .value { font-weight: bold; font-family: monospace; font-size: 1.1em; }
+
+      .indicator {
+        display: inline-block;
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      .indicator.green { background: #4CAF50; box-shadow: 0 0 8px #4CAF5066; }
+      .indicator.red { background: #f44336; box-shadow: 0 0 8px #f4433666; }
+      .indicator.yellow { background: #ff9800; box-shadow: 0 0 8px #ff980066; }
+      .indicator.gray { background: #555; }
+
+      .coords { font-family: monospace; font-size: 1.2em; color: #03A9F4; }
+      .gps-accuracy { color: #FFEB3B; font-size: 0.85em; }
+
+      .logo { font-size: 3em; margin-bottom: 0.3em; }
+      .status-msg { font-size: 0.85em; color: #aaa; margin-top: 1em; }
+
+      .gps-strength {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .gps-bar {
+        width: 6px;
+        height: 12px;
+        background: #333;
+        border-radius: 2px;
+        transition: background 0.5s;
+      }
+      .gps-bar.active { background: #4CAF50; }
+      .gps-bar.active.medium { background: #FFEB3B; }
+      .gps-bar.active.weak { background: #f44336; }
+
+      .error-box {
+        background: #3a0a0a;
+        border: 1px solid #f44336;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+        max-width: 400px;
+        display: none;
+        font-size: 0.85em;
+      }
+      .error-box.visible { display: block; }
+
+      .button {
+        background: #4CAF50;
+        color: #fff;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 1em;
+        cursor: pointer;
+        margin-top: 12px;
+        font-weight: bold;
+      }
+      .button:hover { background: #45a049; }
+      .button.secondary { background: #333; }
+      .button.secondary:hover { background: #444; }
+
+      .help-text {
+        font-size: 0.75em;
+        color: #666;
+        margin-top: 2em;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">📍</div>
+      <h1>RC Car GPS Tracker</h1>
+      <p class="subtitle">Place this phone on the RC car</p>
+
+      <!-- Error box -->
+      <div class="error-box" id="errorBox"></div>
+
+      <!-- Status card -->
+      <div class="status-card">
+        <div class="status-row">
+          <span class="label">🔌 Connection</span>
+          <span class="value">
+            <span class="indicator gray" id="connIndicator"></span>
+            <span id="connStatus">Connecting...</span>
+          </span>
+        </div>
+        <div class="status-row">
+          <span class="label">🛰️ GPS</span>
+          <span class="value">
+            <span class="indicator gray" id="gpsIndicator"></span>
+            <span id="gpsStatus">Waiting...</span>
+          </span>
+        </div>
+        <div class="status-row">
+          <span class="label">📡 Accuracy</span>
+          <span class="value" id="accuracyDisplay">—</span>
+        </div>
+        <div class="status-row">
+          <span class="label">📤 Sending</span>
+          <span class="value">
+            <span class="indicator gray" id="txIndicator"></span>
+            <span id="txStatus">Idle</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Coordinates -->
+      <div class="status-card" id="coordsCard" style="display:none;">
+        <div class="status-row">
+          <span class="label">Latitude</span>
+          <span class="value coords" id="latDisplay">—</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Longitude</span>
+          <span class="value coords" id="lngDisplay">—</span>
+        </div>
+        <div class="status-row">
+          <span class="label">Altitude</span>
+          <span class="value" id="altDisplay">—</span>
+        </div>
+      </div>
+
+      <!-- GPS signal bars -->
+      <div class="status-card" style="padding:12px 20px;">
+        <div class="status-row">
+          <span class="label">GPS Signal</span>
+          <div class="gps-strength">
+            <div class="gps-bar" id="bar1"></div>
+            <div class="gps-bar" id="bar2"></div>
+            <div class="gps-bar" id="bar3"></div>
+            <div class="gps-bar" id="bar4"></div>
+            <div class="gps-bar" id="bar5"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="button secondary" id="btnPause">⏸️ Pause Tracking</button>
+      <br>
+      <button class="button" id="btnRetry" style="display:none;">🔄 Retry Connection</button>
+
+      <p class="help-text" id="statusMsg">⏳ Initializing GPS & connection...</p>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+    <script>
+      (function() {
+        'use strict';
+
+        // ---- Configuration ----
+        const SERVER = 'http://100.83.193.15:5000';
+        const MIN_ACCURACY = 50;   // ignore fixes worse than 50m
+        const SEND_INTERVAL = 1000; // send every 1s even if GPS didn't update
+
+        // ---- DOM refs ----
+        const $ = id => document.getElementById(id);
+        const connIndicator  = $('connIndicator');
+        const connStatus     = $('connStatus');
+        const gpsIndicator   = $('gpsIndicator');
+        const gpsStatus      = $('gpsStatus');
+        const txIndicator    = $('txIndicator');
+        const txStatus       = $('txStatus');
+        const accuracyDisplay = $('accuracyDisplay');
+        const latDisplay     = $('latDisplay');
+        const lngDisplay     = $('lngDisplay');
+        const altDisplay     = $('altDisplay');
+        const coordsCard     = $('coordsCard');
+        const statusMsg      = $('statusMsg');
+        const errorBox       = $('errorBox');
+        const btnPause       = $('btnPause');
+        const btnRetry       = $('btnRetry');
+        const bars           = [1,2,3,4,5].map(i => $('bar' + i));
+
+        // ---- State ----
+        let lastLocation = null;
+        let gpsWatchId = null;
+        let isPaused = false;
+        let hasGoodFix = false;
+        let socketConnected = false;
+        let sendInterval = null;
+
+        // ---- Error display ----
+        function showError(msg) {
+          errorBox.textContent = msg;
+          errorBox.classList.add('visible');
+        }
+        function clearError() {
+          errorBox.classList.remove('visible');
+          errorBox.textContent = '';
+        }
+
+        // ---- GPS signal bars (based on accuracy) ----
+        function updateGpsBars(accuracy) {
+          let barsActive = 0;
+          if (accuracy === null || accuracy === undefined) {
+            barsActive = 0;
+          } else if (accuracy <= 3)   { barsActive = 5; }
+          else if (accuracy <= 5)   { barsActive = 4; }
+          else if (accuracy <= 10)  { barsActive = 3; }
+          else if (accuracy <= 25)  { barsActive = 2; }
+          else if (accuracy <= 50)  { barsActive = 1; }
+          else                      { barsActive = 0; }
+
+          bars.forEach((bar, i) => {
+            bar.className = 'gps-bar';
+            if (i < barsActive) {
+              if (i >= 3) bar.classList.add('active');
+              else if (i >= 1) bar.classList.add('active', 'medium');
+              else bar.classList.add('active', 'weak');
+            }
+          });
+        }
+
+        // ---- GPS callback ----
+        function onGpsPosition(pos) {
+          const coords = pos.coords;
+          const accuracy = coords.accuracy;
+
+          // Ignore very inaccurate fixes
+          if (accuracy > MIN_ACCURACY * 3) {
+            statusMsg.textContent = `📍 Fix too inaccurate (${accuracy.toFixed(0)}m), waiting for better...`;
+            updateGpsBars(accuracy);
+            return;
+          }
+
+          hasGoodFix = true;
+          lastLocation = {
+            lat: coords.latitude,
+            lng: coords.longitude,
+            accuracy: accuracy,
+            altitude: coords.altitude || 0,
+            speed: coords.speed || 0,
+            heading: coords.heading || 0,
+            timestamp: Date.now()
+          };
+
+          // Update UI
+          latDisplay.textContent = coords.latitude.toFixed(7);
+          lngDisplay.textContent = coords.longitude.toFixed(7);
+          altDisplay.textContent = coords.altitude ? coords.altitude.toFixed(1) + ' m' : '—';
+          accuracyDisplay.textContent = accuracy.toFixed(0) + ' m';
+          coordsCard.style.display = 'block';
+
+          // GPS indicator
+          gpsIndicator.className = 'indicator ' + (accuracy <= 10 ? 'green' : accuracy <= 25 ? 'yellow' : 'red');
+          gpsStatus.textContent = accuracy <= 10 ? 'Excellent' : accuracy <= 25 ? 'Fair' : 'Weak';
+
+          // Signal bars
+          updateGpsBars(accuracy);
+
+          const accStr = accuracy.toFixed(0);
+          statusMsg.textContent = `📍 Locked (${accStr}m accuracy) — transmitting location`;
+
+          // Emit if connected (real-time as well as interval)
+          if (socketConnected && !isPaused) {
+            sendLocation(lastLocation);
+          }
+        }
+
+        function onGpsError(err) {
+          console.error('GPS error:', err);
+          hasGoodFix = false;
+          gpsIndicator.className = 'indicator red';
+          gpsStatus.textContent = 'Error';
+
+          const messages = {
+            1: 'GPS permission denied — please grant location access',
+            2: 'GPS unavailable — move to open sky',
+            3: 'GPS timeout — waiting for signal'
+          };
+          const msg = messages[err.code] || `GPS error (${err.code})`;
+          statusMsg.textContent = '⚠️ ' + msg;
+          showError(msg);
+          updateGpsBars(null);
+        }
+
+        // ---- Send location to server ----
+        function sendLocation(loc) {
+          if (!socketConnected) return;
+          txIndicator.className = 'indicator yellow';
+          txStatus.textContent = 'Sending...';
+          socket.emit('location', {
+            lat: loc.lat,
+            lng: loc.lng,
+            accuracy: loc.accuracy,
+            altitude: loc.altitude,
+            speed: loc.speed,
+            heading: loc.heading
+          });
+          // Flash back to green briefly
+          setTimeout(() => {
+            if (socketConnected) {
+              txIndicator.className = 'indicator green';
+              txStatus.textContent = 'Sent';
+            }
+          }, 200);
+        }
+
+        // ---- Interval-based sender (backup) ----
+        function startSendInterval() {
+          if (sendInterval) clearInterval(sendInterval);
+          sendInterval = setInterval(() => {
+            if (socketConnected && lastLocation && !isPaused) {
+              sendLocation(lastLocation);
+            }
+          }, SEND_INTERVAL);
+        }
+
+        // ---- Start/stop GPS ----
+        function startGps() {
+          if (gpsWatchId !== null) return;
+
+          if (!navigator.geolocation) {
+            showError('Geolocation not supported by this browser');
+            statusMsg.textContent = '❌ GPS not supported';
+            return;
+          }
+
+          gpsIndicator.className = 'indicator yellow';
+          gpsStatus.textContent = 'Searching...';
+          statusMsg.textContent = '⏳ Acquiring GPS signal (open sky helps)...';
+
+          gpsWatchId = navigator.geolocation.watchPosition(
+            onGpsPosition,
+            onGpsError,
+            {
+              enableHighAccuracy: true,
+              timeout: 15000,
+              maximumAge: 2000
+            }
+          );
+        }
+
+        function stopGps() {
+          if (gpsWatchId !== null) {
+            navigator.geolocation.clearWatch(gpsWatchId);
+            gpsWatchId = null;
+          }
+          gpsIndicator.className = 'indicator gray';
+          gpsStatus.textContent = 'Stopped';
+          updateGpsBars(null);
+        }
+
+        // ---- Pause / Resume ----
+        btnPause.addEventListener('click', () => {
+          isPaused = !isPaused;
+          btnPause.textContent = isPaused ? '▶️ Resume Tracking' : '⏸️ Pause Tracking';
+          statusMsg.textContent = isPaused ? '⏸️ Tracking paused' : '▶️ Tracking resumed';
+          if (isPaused) {
+            txIndicator.className = 'indicator gray';
+            txStatus.textContent = 'Paused';
+          } else if (lastLocation && socketConnected) {
+            sendLocation(lastLocation);
+          }
+        });
+
+        // ---- Socket.IO ----
+        let socket = null;
+        let reconnectAttempts = 0;
+
+        function connectSocket() {
+          if (socket) {
+            socket.removeAllListeners();
+            socket.disconnect();
+          }
+
+          socket = io(SERVER, {
+            transports: ['websocket'],
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 10000
+          });
+
+          socket.on('connect', () => {
+            socketConnected = true;
+            reconnectAttempts = 0;
+            connIndicator.className = 'indicator green';
+            connStatus.textContent = 'Connected';
+            clearError();
+            btnRetry.style.display = 'none';
+            statusMsg.textContent = hasGoodFix
+              ? '📍 Connected — transmitting GPS'
+              : '✅ Connected, waiting for GPS fix...';
+
+            if (!isPaused && lastLocation) {
+              sendLocation(lastLocation);
+            }
+          });
+
+          socket.on('disconnect', (reason) => {
+            socketConnected = false;
+            connIndicator.className = 'indicator red';
+            connStatus.textContent = 'Disconnected';
+            txIndicator.className = 'indicator gray';
+            txStatus.textContent = 'Idle';
+            statusMsg.textContent = '⚠️ Lost connection to server — reconnecting...';
+          });
+
+          socket.on('connect_error', (err) => {
+            socketConnected = false;
+            connIndicator.className = 'indicator red';
+            connStatus.textContent = 'Failed';
+            reconnectAttempts++;
+            statusMsg.textContent = `⚠️ Connection failed (attempt ${reconnectAttempts}) — retrying...`;
+            if (reconnectAttempts > 5) {
+              showError(`Cannot reach server at ${SERVER}. Check that server is running.`);
+              btnRetry.style.display = 'inline-block';
+            }
+          });
+
+          socket.on('reconnect', () => {
+            socketConnected = true;
+            connIndicator.className = 'indicator green';
+            connStatus.textContent = 'Reconnected';
+            clearError();
+            statusMsg.textContent = '✅ Reconnected to server';
+          });
+        }
+
+        // ---- Manual retry ----
+        btnRetry.addEventListener('click', () => {
+          reconnectAttempts = 0;
+          btnRetry.style.display = 'none';
+          clearError();
+          statusMsg.textContent = '🔄 Retrying connection...';
+          connectSocket();
+        });
+
+        // ---- Init ----
+        function init() {
+          // Connect socket
+          connectSocket();
+
+          // Start GPS
+          startGps();
+
+          // Start send interval
+          startSendInterval();
+
+          // Handle visibility changes - pause when phone screen off to save battery
+          document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+              // Optionally reduce GPS polling by stopping and restarting on visible
+              // For now we keep it running — GPS is critical for tracking
+              statusMsg.textContent = '📱 Screen off — GPS still active';
+            } else {
+              statusMsg.textContent = hasGoodFix
+                ? '📍 Tracking active'
+                : '⏳ Re-acquiring GPS...';
+            }
+          });
+
+          statusMsg.textContent = '🚀 Initializing...';
+        }
+
+        // Handle page unload — clean up
+        window.addEventListener('beforeunload', () => {
+          stopGps();
+          if (sendInterval) clearInterval(sendInterval);
+          if (socket) socket.disconnect();
+        });
+
+        // Wait for DOM
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', init);
+        } else {
+          init();
+        }
+
+      })();
+    </script>
+  </body>
+</html>
