@@ -7,7 +7,7 @@ import json
 import math
 import threading
 
-from flask import Flask, render_template, Response
+from flask import Flask, render_template, Response, send_from_directory
 from flask_socketio import SocketIO
 import paho.mqtt.client as mqtt
 import cv2
@@ -52,7 +52,7 @@ scale_smooth    = GEAR_SCALE[1]
 _last_input_t   = None
 
 # — Camera URL (configurable via env, no crash if unavailable) —
-CAMERA_URL = os.getenv('CAMERA_URL', 'http://10.212.49.6:8080/video')
+CAMERA_URL = os.getenv('CAMERA_URL', 'http://100.111.238.108:8080/video')  # IP Webcam via Tailscale
 
 print(f"📷 Camera configured: {CAMERA_URL}")
 print(f"   To change: set environment variable CAMERA_URL, or modify app.py default")
@@ -102,6 +102,12 @@ def _make_placeholder_frame(text="No Signal"):
     jpg = buffer.tobytes()
     return (b'--frame\r\n'
             b'Content-Type: image/jpeg\r\n\r\n' + jpg + b'\r\n')
+
+@app.route('/templates/<path:filename>')
+def serve_templates(filename):
+    """Serve static assets from the templates folder (images, CSS, JS, etc.)"""
+    return send_from_directory('templates', filename)
+
 
 @app.route('/video_feed')
 def video_feed():
@@ -219,6 +225,34 @@ def restart_hotspot():
 
 
 if __name__ == '__main__':
+    import ssl as ssl_mod
+
     port = int(os.environ.get('PORT', 5002))
-    print(f"Starting server on http://0.0.0.0:{port}/")
-    socketio.run(app, host='0.0.0.0', port=port, debug=False, use_reloader=False)
+
+    ssl_dir = os.path.join(os.path.dirname(__file__), 'ssl')
+    certfile = os.path.join(ssl_dir, 'cert.pem')
+    keyfile = os.path.join(ssl_dir, 'key.pem')
+    has_ssl = os.path.exists(certfile) and os.path.exists(keyfile)
+
+    if has_ssl:
+        print(f"🔒 HTTPS + SocketIO on port {port}")
+        print(f"📱 Phone GPS page: https://100.70.113.90:{port}/phone")
+        print(f"📊 Dashboard:      https://localhost:{port}/dashboard")
+        print(f"   (accept self-signed cert warning in both phone and PC browsers)")
+        # Threading mode + SSL = SocketIO + GPS all on one port
+        context = ssl_mod.SSLContext(ssl_mod.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile, keyfile)
+        socketio = SocketIO(
+            app,
+            async_mode='threading',
+            cors_allowed_origins="*",
+            logger=True,
+            engineio_logger=True
+        )
+        socketio.run(app, host='0.0.0.0', port=port, debug=False, use_reloader=False,
+                     ssl_context=context)
+    else:
+        print(f"⚠️  No SSL certs — GPS may not work on Android Chrome over HTTP")
+        print(f"📱 Phone GPS page: http://100.70.113.90:{port}/phone")
+        print(f"📊 Dashboard:      http://localhost:{port}/dashboard")
+        socketio.run(app, host='0.0.0.0', port=port, debug=False, use_reloader=False)

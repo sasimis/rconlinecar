@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "author": "sasimis",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo1",
+      "top": -150,
+      "left": 200,
+      "attrs": { "label": "Steering" }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "servo2",
+      "top": -50,
+      "left": 200,
+      "attrs": { "label": "ESC (Motor)" }
+    }
+  ],
+  "connections": [
+    ["esp:GND.1", "servo1:GND", "black", ["v-20", "h0"]],
+    ["esp:VIN", "servo1:VCC", "red", ["v0", "h20"]],
+    ["esp:D18", "servo1:SIG", "yellow", ["v0", "h20"]],
+    ["esp:GND.1", "servo2:GND", "black", ["v0", "h10"]],
+    ["esp:VIN", "servo2:VCC", "red", ["v0", "h10"]],
+    ["esp:D19", "servo2:SIG", "yellow", ["v0", "h10"]]
+  ]
+}

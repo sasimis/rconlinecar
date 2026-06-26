@@ -196,8 +196,8 @@
         'use strict';
 
         // ---- Configuration ----
-        const SERVER = 'http://100.83.193.15:5002';
-        const MIN_ACCURACY = 50;   // ignore fixes worse than 50m
+        const SERVER = 'https://100.70.113.90:5002';
+        const MIN_ACCURACY = 100;  // ignore fixes worse than 100m (more lenient)
         const SEND_INTERVAL = 1000; // send every 1s even if GPS didn't update
 
         // ---- DOM refs ----
@@ -413,7 +413,7 @@
           }
 
           socket = io(SERVER, {
-            transports: ['websocket'],
+            transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: Infinity,
             reconnectionDelay: 1000,

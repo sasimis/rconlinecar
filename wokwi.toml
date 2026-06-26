@@ -1,0 +1,6 @@
+[wokwi]
+version = 1
+firmware = "rc_controller/rc_controller.ino"
+
+[esp32]
+version = "3.3.10"
