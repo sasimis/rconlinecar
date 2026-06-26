@@ -15,6 +15,11 @@ const char* TOPIC_RESTART  = "myrc/car1/restart";
 const int STEERING_PIN = 18;
 const int ESC_PIN      = 19;
 
+// ===== FAILSAFE =====
+// If no drive command arrives within this window, cut throttle to neutral
+// (prevents runaways and reconnect-jerks when the cellular link stalls).
+const unsigned long FAILSAFE_MS = 300;
+
 // ===== GLOBALS =====
 WiFiClient    net;
 PubSubClient  mqtt(net);
@@ -25,6 +30,7 @@ int  steeringAngle = 90;
 int  throttlePWM   = 0;
 bool restartPending = false;
 unsigned long lastReconnectAttempt = 0;
+unsigned long lastCmdTime = 0;   // millis() of last drive command (for failsafe)
 
 // ===== FORWARD DECLARATIONS =====
 void connectWiFi();
@@ -55,6 +61,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int len) {
   if (strcmp(topic, TOPIC_INPUT) == 0) {
     steeringAngle = doc["angle"];
     throttlePWM   = doc["pwm"];
+    lastCmdTime   = millis();  // mark command as fresh for the failsafe
     // Removed Serial.printf to prevent hardware transmission lag
   }
 }
@@ -157,9 +164,15 @@ void loop() {
   // --- Process incoming MQTT messages ---
   mqtt.loop();
 
+  // --- Failsafe: stale link -> throttle to neutral (steering holds last) ---
+  int safePWM = throttlePWM;
+  if (millis() - lastCmdTime > FAILSAFE_MS) {  // fresh read: callback may have run in mqtt.loop()
+    safePWM = 0;
+  }
+
   // --- Write Actuator Outputs ---
   steeringServo.write(steeringAngle);
-  int us = map(throttlePWM, -255, 255, 1000, 2000);
+  int us = map(safePWM, -255, 255, 1000, 2000);
   esc.writeMicroseconds(constrain(us, 1000, 2000));
 
   // Minimum required yield background time

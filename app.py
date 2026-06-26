@@ -4,6 +4,7 @@ eventlet.monkey_patch()
 import os
 import time
 import json
+import math
 import threading
 
 from flask import Flask, render_template, Response
@@ -32,15 +33,23 @@ MQTT_PORT   = int(os.getenv('MQTT_PORT', '1883'))
 TOPIC_INPUT    = 'myrc/car1/input'
 TOPIC_RESTART  = 'myrc/car1/restart'
 mqttc = mqtt.Client()
-mqttc.connect(MQTT_BROKER, MQTT_PORT, keepalive=60)
+# connect_async + loop_start: the server still starts if the broker isn't up
+# yet and auto-reconnects — important when running a local broker.
+mqttc.connect_async(MQTT_BROKER, MQTT_PORT, keepalive=60)
 mqttc.loop_start()
+print(f"📡 MQTT broker: {MQTT_BROKER}:{MQTT_PORT} (set MQTT_BROKER env var to change)")
 
-# — Gear & smoothing —
+# — Gear & smoothing (time-based, frame-rate independent) —
 GEAR_SCALE      = [0.0, 0.10, 0.3, 0.5, 0.7, 1.0]
-SMOOTH          = 0.2
+# Smoothing time constants (seconds). Smaller = snappier response.
+TAU_STEER       = 0.05   # steering: near-instant
+TAU_THROTTLE    = 0.12   # throttle: short ramp to spare the drivetrain
+TAU_GEAR        = 0.15   # gear-scale change
+MAX_DT          = 0.25   # clamp elapsed time so a stall can't jump the output
 steer_smooth    = 0.0
 throttle_smooth = 0.0
 scale_smooth    = GEAR_SCALE[1]
+_last_input_t   = None
 
 # — Camera URL (configurable via env, no crash if unavailable) —
 CAMERA_URL = os.getenv('CAMERA_URL', 'http://10.212.49.6:8080/video')
@@ -152,21 +161,31 @@ def handle_location(data):
 
 @socketio.on('controller_input')
 def handle_input(data):
-    global steer_smooth, throttle_smooth, scale_smooth
+    global steer_smooth, throttle_smooth, scale_smooth, _last_input_t
 
     raw_steer = data.get('steering', 0.0)
     raw_thr   = data.get('throttle', 0.0)
     raw_brk   = data.get('brake', 0.0)
-    gear      = data.get('gear', 1)
+    gear      = int(data.get('gear', 1))
+    gear      = max(0, min(gear, len(GEAR_SCALE) - 1))  # guard against bad index
 
-    steer_smooth += SMOOTH * (raw_steer - steer_smooth)
+    # Time-based smoothing: alpha depends on elapsed time, not packet rate, so
+    # the feel stays consistent even when packets are dropped or arrive bursty.
+    now = time.time()
+    dt = MAX_DT if _last_input_t is None else min(now - _last_input_t, MAX_DT)
+    _last_input_t = now
+    a_steer = 1.0 - math.exp(-dt / TAU_STEER)
+    a_thr   = 1.0 - math.exp(-dt / TAU_THROTTLE)
+    a_gear  = 1.0 - math.exp(-dt / TAU_GEAR)
+
+    steer_smooth += a_steer * (raw_steer - steer_smooth)
     angle = int((steer_smooth * 0.5 + 0.5) * 180)
 
     forward = -raw_brk if raw_brk > 0.1 else raw_thr
-    throttle_smooth += SMOOTH * (forward - throttle_smooth)
+    throttle_smooth += a_thr * (forward - throttle_smooth)
 
     target_scale = GEAR_SCALE[gear]
-    scale_smooth += SMOOTH * (target_scale - scale_smooth)
+    scale_smooth += a_gear * (target_scale - scale_smooth)
 
     pwm = int(throttle_smooth * scale_smooth * 255)
 
