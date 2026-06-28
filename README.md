@@ -4,6 +4,22 @@ Remote-controlled ESP32 RC car with a camera-first driving dashboard, GPS map, P
 
 Project page: https://sasimis.github.io/rconlinecar/index.html
 
+## New Direction
+
+This branch starts the migration toward a more serious RC stack:
+
+- ExpressLRS for steering/throttle control.
+- WebRTC for low-latency video.
+- Dashboard for telemetry, GPS, map, recording, configuration, and emergency supervision.
+- ESP32 for local failsafe and vehicle-side logic.
+
+See:
+
+- [`docs/expresslrs-webrtc-architecture.md`](docs/expresslrs-webrtc-architecture.md)
+- [`docs/hardware-decisions.md`](docs/hardware-decisions.md)
+
+The existing phone/Tailscale bridge remains in the repo as the working prototype while the new control path is designed and tested.
+
 ## Current Architecture
 
 ```text
@@ -94,9 +110,18 @@ Termux setup:
 
 ```sh
 pkg update
-pkg install python
+pkg install python curl
 pip install "python-socketio[client]"
+curl -k -fsSL https://100.70.113.90:5002/bridge/phone_bridge.py -o phone_bridge.py
 python phone_bridge.py
+```
+
+`phone_bridge.py` checks `https://100.70.113.90:5002/bridge/phone_bridge.py` at startup and restarts itself if the PC has a newer copy. After the first install, restarting the script is enough to update it automatically.
+
+Optional one-command launcher:
+
+```sh
+curl -k -fsSL https://100.70.113.90:5002/bridge/phone_bridge.py -o phone_bridge.py && python phone_bridge.py
 ```
 
 Default bridge:

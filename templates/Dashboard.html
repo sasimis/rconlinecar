@@ -72,7 +72,8 @@
     }
     .telemetry-panel .battery, 
     .telemetry-panel .controller-status,
-    .telemetry-panel .keyboard-status {
+    .telemetry-panel .keyboard-status,
+    .telemetry-panel .link-status {
       font-size: 0.92em;
       color: #FDE68A;
       margin-top: 0.42em;
@@ -243,6 +244,10 @@
     <div class="keyboard-status">
       WASD: <span id="keyboard-status">ready, gear 1</span>
     </div>
+    <div class="link-status">
+      Link: <span id="bridge-latency">bridge -- ms</span><br>
+      ESP age: <span id="esp-age">-- ms</span> | seq <span id="command-seq">--</span>
+    </div>
     <div class="controls">
       <button id="btnRestartESP">Restart ESP</button>
       <button id="btnRestartHotspot">Restart Hotspot</button>
@@ -274,7 +279,8 @@
       const $ = id => document.getElementById(id);
       const steer = $('steer'), throttle = $('throttle'), speed = $('speed');
       const gearEl = $('gear'), battery = $('battery'), ctrlStatus = $('controller-status');
-      const keyboardStatus = $('keyboard-status');
+      const keyboardStatus = $('keyboard-status'), bridgeLatency = $('bridge-latency');
+      const espAge = $('esp-age'), commandSeq = $('command-seq');
       const serverDot = $('server-dot'), serverStatus = $('server-status');
       const gpsDot = $('gps-dot'), gpsStatus = $('gps-status');
       const mapEl = $('map'), coords = $('coords'), accDisplay = $('accDisplay');
@@ -290,6 +296,7 @@
           lastEspSeen = Date.now();
           const payload = data.payload || {};
           const rssi = payload.wifi !== undefined ? ` (${payload.wifi} dBm)` : '';
+          if (payload.age_ms !== undefined) espAge.innerText = `${payload.age_ms} ms`;
           ctrlStatus.innerText = `Online${rssi}`;
         } else if (!lastEspSeen) {
           ctrlStatus.innerText = 'Offline / no heartbeat';
@@ -300,8 +307,20 @@
         lastTelemetry = data;
         steer.innerText = data.steering; throttle.innerText = data.throttle;
         speed.innerText = data.speed.toFixed(1); gearEl.innerText = data.gear;
+        if (data.seq !== undefined) commandSeq.innerText = data.seq;
         if (data.battery !== undefined) battery.innerText = data.battery.toFixed(1);
         if (lastEspSeen && data.controllerOnline) ctrlStatus.innerText = ctrlStatus.innerText.replace(' | no controller', '').replace(' | controller online', '') + ' | controller online';
+      });
+      socket.on('bridge_status', data => {
+        const age = Number(data.commandAgeMs);
+        if (Number.isFinite(age)) {
+          bridgeLatency.innerText = data.stale ? `bridge ${age} ms stale` : `bridge ${age} ms`;
+          bridgeLatency.style.color = data.stale ? '#FCA5A5' : age < 120 ? '#6EE7B7' : age < 260 ? '#FDE68A' : '#FCA5A5';
+        } else {
+          bridgeLatency.innerText = 'bridge -- ms';
+          bridgeLatency.style.color = '';
+        }
+        if (data.seq !== undefined) commandSeq.innerText = data.seq;
       });
       $('btnRestartESP').onclick = () => { socket.emit('restart_esp'); alert('Restart ESP requested'); };
       $('btnRestartHotspot').onclick = () => { socket.emit('restart_hotspot'); alert('Restart Hotspot requested'); };
@@ -413,6 +432,14 @@
         coords.innerText = `${status.message || 'Phone connected, waiting for GPS fix'}${accText}`;
       }
       socket.on('phone_status', showWaitingGpsStatus);
+      socket.on('gps_filter_status', status => {
+        const reason = status.reason || 'unstable GPS point';
+        const accuracy = Number(status.accuracy);
+        const accText = Number.isFinite(accuracy) && accuracy > 0 ? `, +/-${accuracy.toFixed(0)}m` : '';
+        gpsDot.className = 'gps-dot yellow';
+        gpsStatus.textContent = 'GPS Filtered';
+        accDisplay.innerText = `${reason}${accText}`;
+      });
       socket.on('location', loc => {
         const lat = Number(loc.lat);
         const lng = Number(loc.lng);

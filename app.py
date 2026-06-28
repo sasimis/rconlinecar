@@ -28,6 +28,13 @@ socketio = SocketIO(
 _last_location = None
 _last_location_lock = threading.Lock()
 
+# GPSLogger/mobile GPS can wander by several meters even when the car is still.
+# These limits keep the map useful for driving instead of drawing every noisy fix.
+GPS_MAX_ACCEPTED_ACCURACY_M = float(os.getenv('GPS_MAX_ACCEPTED_ACCURACY_M', '45'))
+GPS_STATIONARY_SPEED_MPS = float(os.getenv('GPS_STATIONARY_SPEED_MPS', '0.8'))
+GPS_MIN_STATIONARY_MOVE_M = float(os.getenv('GPS_MIN_STATIONARY_MOVE_M', '8'))
+GPS_MAX_JUMP_SPEED_MPS = float(os.getenv('GPS_MAX_JUMP_SPEED_MPS', '22'))
+
 
 def _coerce_float(value):
     try:
@@ -60,6 +67,43 @@ def _normalize_location(data):
         'heading': _first_float(data, 'heading', 'bearing', 'dir', 'direction') or 0,
         'serverTime': time.time()
     }
+
+
+def _distance_m(a, b):
+    earth_radius_m = 6371000.0
+    lat1 = math.radians(a['lat'])
+    lat2 = math.radians(b['lat'])
+    dlat = lat2 - lat1
+    dlng = math.radians(b['lng'] - a['lng'])
+    h = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * math.sin(dlng / 2) ** 2
+    )
+    return earth_radius_m * 2 * math.atan2(math.sqrt(h), math.sqrt(1 - h))
+
+
+def _filter_location(location, previous):
+    accuracy = float(location.get('accuracy') or 0)
+    speed = max(0.0, float(location.get('speed') or 0))
+
+    if accuracy > GPS_MAX_ACCEPTED_ACCURACY_M:
+        return None, f"accuracy {accuracy:.0f}m over limit"
+
+    if previous is None:
+        return location, None
+
+    distance = _distance_m(previous, location)
+    dt = max(0.1, location['serverTime'] - previous.get('serverTime', location['serverTime']))
+    implied_speed = distance / dt
+    jitter_radius = max(GPS_MIN_STATIONARY_MOVE_M, accuracy * 1.2)
+
+    if speed <= GPS_STATIONARY_SPEED_MPS and distance <= jitter_radius:
+        return None, f"stationary jitter {distance:.1f}m"
+
+    if implied_speed > GPS_MAX_JUMP_SPEED_MPS and distance > jitter_radius:
+        return None, f"jump {distance:.1f}m in {dt:.1f}s"
+
+    return location, None
 
 # — MQTT setup —
 MQTT_BROKER = os.getenv('MQTT_BROKER', 'broker.hivemq.com')
@@ -177,6 +221,12 @@ def serve_templates(filename):
     return send_from_directory('templates', filename)
 
 
+@app.route('/bridge/phone_bridge.py')
+def serve_phone_bridge():
+    """Serve the latest phone bridge script to the Android phone."""
+    return send_from_directory('.', 'phone_bridge.py', mimetype='text/x-python')
+
+
 @app.route('/video_feed')
 def video_feed():
     return Response(
@@ -241,9 +291,21 @@ def handle_location(data):
         return {'ok': False, 'error': 'invalid location'}
 
     with _last_location_lock:
-        _last_location = location
+        accepted, reason = _filter_location(location, _last_location)
+        if accepted is None:
+            print(f"[{time.strftime('%H:%M:%S')}] GPS location filtered: {reason}")
+            socketio.emit('gps_filter_status', {
+                'accepted': False,
+                'reason': reason,
+                'accuracy': location['accuracy'],
+                'speed': location['speed'],
+                'serverTime': location['serverTime']
+            })
+            return {'ok': True, 'filtered': True, 'reason': reason}
+        _last_location = accepted
+
     print(f"[{time.strftime('%H:%M:%S')}] GPS location: lat={location['lat']:.6f}, "
-          f"lng={location['lng']:.6f}, acc={location['accuracy']}m")
+          f"lng={location['lng']:.6f}, acc={location['accuracy']}m, speed={location['speed']}m/s")
     socketio.emit('location', location)
     return {'ok': True, 'location': location}
 
@@ -300,7 +362,8 @@ def handle_input(data):
         'pwm': pwm,
         'gear': gear,
         'seq': _command_seq,
-        'session': COMMAND_SESSION
+        'session': COMMAND_SESSION,
+        'serverTime': time.time()
     }
     mqttc.publish(TOPIC_INPUT, json.dumps(payload), qos=0)
     socketio.emit('drive_command', payload)
@@ -311,8 +374,14 @@ def handle_input(data):
         'throttle': pwm,
         'gear': gear,
         'speed': round(speed, 1),
+        'seq': _command_seq,
         'controllerOnline': True
     })
+
+
+@socketio.on('bridge_status')
+def handle_bridge_status(data):
+    socketio.emit('bridge_status', data or {})
 
 
 @socketio.on('restart_esp')

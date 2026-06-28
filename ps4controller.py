@@ -224,8 +224,40 @@ t_ax, t_rest, t_full = cfg['throttle']['axis'], cfg['throttle']['rest'], cfg['th
 b_ax, b_rest, b_full = cfg['brake']['axis'], cfg['brake']['rest'], cfg['brake']['full']
 GEAR_UP, GEAR_DOWN = cfg['gear_up'], cfg['gear_down']
 
-sio = socketio.Client(ssl_verify=False)
-sio.connect(SERVER, transports=['websocket'])
+sio = socketio.Client(
+    ssl_verify=False,
+    reconnection=True,
+    reconnection_attempts=0,
+    reconnection_delay=1,
+    reconnection_delay_max=3,
+)
+
+
+@sio.event
+def connect():
+    print("\nController link connected, SID:", sio.sid)
+
+
+@sio.event
+def disconnect():
+    print("\nController link disconnected; waiting for reconnect...")
+
+
+@sio.event
+def connect_error(data):
+    print(f"\nController link error: {data}")
+
+
+def connect_controller_server():
+    while not sio.connected:
+        try:
+            sio.connect(SERVER, transports=['websocket'], wait_timeout=5)
+        except Exception as e:
+            print(f"Waiting for dashboard at {SERVER}: {e}")
+            time.sleep(1)
+
+
+connect_controller_server()
 print("\n🟢 Connected, SID:", sio.sid)
 print("— Move sticks/triggers; live debug below —\n")
 
@@ -254,12 +286,19 @@ try:
             print(f"[DBG] steer={rs:+.2f}, throttle={thr:.2f}, "
                   f"brake={brk:.2f}, gear={gear}")
 
-        sio.emit('controller_input', {
-            'steering': rs,
-            'throttle': thr,
-            'brake':    brk,
-            'gear':     gear
-        })
+        if sio.connected:
+            try:
+                sio.emit('controller_input', {
+                    'steering': rs,
+                    'throttle': thr,
+                    'brake':    brk,
+                    'gear':     gear
+                })
+            except socketio.exceptions.BadNamespaceError:
+                print("Controller namespace not ready; reconnecting...")
+                connect_controller_server()
+        else:
+            connect_controller_server()
         time.sleep(DELAY)
 
 except KeyboardInterrupt:
