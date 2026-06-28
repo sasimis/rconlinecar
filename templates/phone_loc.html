@@ -196,7 +196,7 @@
         'use strict';
 
         // ---- Configuration ----
-        const SERVER = 'https://100.70.113.90:5002';
+        const SERVER = window.location.protocol === 'file:' ? 'https://100.70.113.90:5002' : window.location.origin;
         const MIN_ACCURACY = 100;  // ignore fixes worse than 100m (more lenient)
         const SEND_INTERVAL = 1000; // send every 1s even if GPS didn't update
 
@@ -236,6 +236,15 @@
           errorBox.classList.remove('visible');
           errorBox.textContent = '';
         }
+        function emitPhoneStatus(state, message, accuracy) {
+          if (!socketConnected || !socket) return;
+          socket.emit('phone_status', {
+            state: state,
+            message: message,
+            accuracy: accuracy || 0,
+            paused: isPaused
+          });
+        }
 
         // ---- GPS signal bars (based on accuracy) ----
         function updateGpsBars(accuracy) {
@@ -268,6 +277,7 @@
           if (accuracy > MIN_ACCURACY * 3) {
             statusMsg.textContent = `📍 Fix too inaccurate (${accuracy.toFixed(0)}m), waiting for better...`;
             updateGpsBars(accuracy);
+            emitPhoneStatus('too_inaccurate', 'GPS fix too inaccurate', accuracy);
             return;
           }
 
@@ -298,6 +308,7 @@
 
           const accStr = accuracy.toFixed(0);
           statusMsg.textContent = `📍 Locked (${accStr}m accuracy) — transmitting location`;
+          emitPhoneStatus('fix', 'GPS locked', accuracy);
 
           // Emit if connected (real-time as well as interval)
           if (socketConnected && !isPaused) {
@@ -320,6 +331,7 @@
           statusMsg.textContent = '⚠️ ' + msg;
           showError(msg);
           updateGpsBars(null);
+          emitPhoneStatus('error', msg, 0);
         }
 
         // ---- Send location to server ----
@@ -327,21 +339,47 @@
           if (!socketConnected) return;
           txIndicator.className = 'indicator yellow';
           txStatus.textContent = 'Sending...';
-          socket.emit('location', {
+          const payload = {
             lat: loc.lat,
             lng: loc.lng,
             accuracy: loc.accuracy,
             altitude: loc.altitude,
             speed: loc.speed,
             heading: loc.heading
-          });
-          // Flash back to green briefly
-          setTimeout(() => {
-            if (socketConnected) {
+          };
+          socket.timeout(3000).emit('location', payload, (err, response) => {
+            if (!socketConnected) return;
+            if (err || !response || !response.ok) {
+              sendLocationHttp(payload);
+              return;
+            }
+            txIndicator.className = 'indicator green';
+            txStatus.textContent = 'Server OK';
+            setTimeout(() => {
+              if (!socketConnected) return;
               txIndicator.className = 'indicator green';
               txStatus.textContent = 'Sent';
-            }
-          }, 200);
+            }, 500);
+          });
+        }
+
+        async function sendLocationHttp(payload) {
+          try {
+            const response = await fetch('/api/location', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (!response.ok || !data.ok) throw new Error(data.error || 'HTTP location failed');
+            txIndicator.className = 'indicator green';
+            txStatus.textContent = 'HTTP OK';
+            emitPhoneStatus('fix', 'GPS sent by HTTP fallback', payload.accuracy);
+          } catch (error) {
+            txIndicator.className = 'indicator red';
+            txStatus.textContent = 'No server ack';
+            emitPhoneStatus('send_failed', 'Phone has GPS, but server did not acknowledge location', payload.accuracy);
+          }
         }
 
         // ---- Interval-based sender (backup) ----
@@ -367,6 +405,7 @@
           gpsIndicator.className = 'indicator yellow';
           gpsStatus.textContent = 'Searching...';
           statusMsg.textContent = '⏳ Acquiring GPS signal (open sky helps)...';
+          emitPhoneStatus('searching', 'Phone connected, searching for GPS', 0);
 
           gpsWatchId = navigator.geolocation.watchPosition(
             onGpsPosition,
@@ -397,7 +436,9 @@
           if (isPaused) {
             txIndicator.className = 'indicator gray';
             txStatus.textContent = 'Paused';
+            emitPhoneStatus('paused', 'GPS transmission paused', 0);
           } else if (lastLocation && socketConnected) {
+            emitPhoneStatus('resumed', 'GPS transmission resumed', lastLocation.accuracy);
             sendLocation(lastLocation);
           }
         });
@@ -430,6 +471,11 @@
             statusMsg.textContent = hasGoodFix
               ? '📍 Connected — transmitting GPS'
               : '✅ Connected, waiting for GPS fix...';
+            emitPhoneStatus(
+              hasGoodFix ? 'fix' : 'connected',
+              hasGoodFix ? 'Phone connected, transmitting GPS' : 'Phone connected, waiting for GPS fix',
+              lastLocation ? lastLocation.accuracy : 0
+            );
 
             if (!isPaused && lastLocation) {
               sendLocation(lastLocation);

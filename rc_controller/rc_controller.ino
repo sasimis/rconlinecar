@@ -1,4 +1,5 @@
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <PubSubClient.h>
 #include <ESP32Servo.h>
 #include <ArduinoJson.h>
@@ -8,8 +9,10 @@ const char* SSID       = "Redmi10s";
 const char* PASS       = "12345678";
 const char* MQTT_BROKER = "broker.hivemq.com";
 const int   MQTT_PORT   = 1883;
+const int   UDP_PORT    = 4210;
 const char* TOPIC_INPUT    = "myrc/car1/input";
 const char* TOPIC_RESTART  = "myrc/car1/restart";
+const char* TOPIC_STATUS   = "myrc/car1/status";
 
 // ===== PIN ASSIGNMENTS =====
 const int STEERING_PIN = 18;
@@ -23,6 +26,7 @@ const unsigned long FAILSAFE_MS = 300;
 // ===== GLOBALS =====
 WiFiClient    net;
 PubSubClient  mqtt(net);
+WiFiUDP       udp;
 Servo steeringServo, esc;
 
 // state
@@ -31,11 +35,33 @@ int  throttlePWM   = 0;
 bool restartPending = false;
 unsigned long lastReconnectAttempt = 0;
 unsigned long lastCmdTime = 0;   // millis() of last drive command (for failsafe)
+unsigned long lastStatusPublish = 0;
+unsigned long lastCommandSeq = 0;
+String commandSession = "";
 
 // ===== FORWARD DECLARATIONS =====
 void connectWiFi();
 void connectMQTT();
+void applyDriveCommand(JsonDocument& doc);
 void onMqttMessage(char* topic, byte* payload, unsigned int len);
+
+void applyDriveCommand(JsonDocument& doc) {
+  const char* incomingSession = doc["session"] | "";
+  unsigned long incomingSeq = doc["seq"] | 0;
+  if (strlen(incomingSession) > 0 && commandSession != incomingSession) {
+    commandSession = incomingSession;
+    lastCommandSeq = 0;
+  }
+  if (incomingSeq > 0 && incomingSeq <= lastCommandSeq) {
+    return;
+  }
+  if (incomingSeq > 0) {
+    lastCommandSeq = incomingSeq;
+  }
+  steeringAngle = doc["angle"];
+  throttlePWM   = doc["pwm"];
+  lastCmdTime   = millis();
+}
 
 // ================================================================
 //                    MQTT CALLBACK (OPTIMIZED)
@@ -59,9 +85,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int len) {
   }
 
   if (strcmp(topic, TOPIC_INPUT) == 0) {
-    steeringAngle = doc["angle"];
-    throttlePWM   = doc["pwm"];
-    lastCmdTime   = millis();  // mark command as fresh for the failsafe
+    applyDriveCommand(doc);
     // Removed Serial.printf to prevent hardware transmission lag
   }
 }
@@ -101,6 +125,7 @@ void connectMQTT() {
     Serial.println("✅ Connected!");
     mqtt.subscribe(TOPIC_INPUT, 0);   // Explicitly Force QoS 0 for instant processing
     mqtt.subscribe(TOPIC_RESTART, 0); // Explicitly Force QoS 0
+    mqtt.publish(TOPIC_STATUS, "{\"online\":true,\"event\":\"connected\"}", false);
   } else {
     Serial.printf(" failed (rc=%d)\n", mqtt.state());
   }
@@ -118,6 +143,7 @@ void setup() {
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
   mqtt.setCallback(onMqttMessage);
   connectMQTT();
+  udp.begin(UDP_PORT);
 
   // Attach servos/ESC
   steeringServo.setPeriodHertz(50);
@@ -158,11 +184,37 @@ void loop() {
       lastReconnectAttempt = now;
       connectMQTT();
     }
-    return;
   }
 
   // --- Process incoming MQTT messages ---
-  mqtt.loop();
+  if (mqtt.connected()) {
+    mqtt.loop();
+  }
+
+  int packetSize = udp.parsePacket();
+  if (packetSize > 0) {
+    char buffer[256];
+    int len = udp.read(buffer, sizeof(buffer) - 1);
+    if (len > 0) {
+      buffer[len] = '\0';
+      StaticJsonDocument<256> doc;
+      DeserializationError err = deserializeJson(doc, buffer);
+      if (!err) {
+        applyDriveCommand(doc);
+      }
+    }
+  }
+
+  if (mqtt.connected() && now - lastStatusPublish > 1000) {
+    lastStatusPublish = now;
+    StaticJsonDocument<128> status;
+    status["online"] = true;
+    status["age_ms"] = now - lastCmdTime;
+    status["wifi"] = WiFi.RSSI();
+    char buffer[128];
+    size_t len = serializeJson(status, buffer);
+    mqtt.publish(TOPIC_STATUS, reinterpret_cast<const uint8_t*>(buffer), len, false);
+  }
 
   // --- Failsafe: stale link -> throttle to neutral (steering holds last) ---
   int safePWM = throttlePWM;

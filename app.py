@@ -6,8 +6,9 @@ import time
 import json
 import math
 import threading
+from urllib.parse import parse_qs
 
-from flask import Flask, render_template, Response, send_from_directory
+from flask import Flask, jsonify, render_template, request, Response, send_from_directory
 from flask_socketio import SocketIO
 import paho.mqtt.client as mqtt
 import cv2
@@ -17,7 +18,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'rc-car-secret'
 socketio = SocketIO(
     app,
-    async_mode='eventlet',
+    async_mode='threading',
     cors_allowed_origins="*",
     logger=True,
     engineio_logger=True
@@ -27,12 +28,79 @@ socketio = SocketIO(
 _last_location = None
 _last_location_lock = threading.Lock()
 
+
+def _coerce_float(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _first_float(data, *names):
+    for name in names:
+        value = _coerce_float(data.get(name))
+        if value is not None:
+            return value
+    return None
+
+
+def _normalize_location(data):
+    data = data or {}
+    lat = _first_float(data, 'lat', 'latitude')
+    lng = _first_float(data, 'lng', 'lon', 'long', 'longitude')
+    if lat is None or lng is None:
+        return None
+    return {
+        'lat': lat,
+        'lng': lng,
+        'accuracy': _first_float(data, 'accuracy', 'acc') or 0,
+        'altitude': _first_float(data, 'altitude', 'alt') or 0,
+        'speed': _first_float(data, 'speed', 'spd') or 0,
+        'heading': _first_float(data, 'heading', 'bearing', 'dir', 'direction') or 0,
+        'serverTime': time.time()
+    }
+
 # — MQTT setup —
 MQTT_BROKER = os.getenv('MQTT_BROKER', 'broker.hivemq.com')
 MQTT_PORT   = int(os.getenv('MQTT_PORT', '1883'))
 TOPIC_INPUT    = 'myrc/car1/input'
 TOPIC_RESTART  = 'myrc/car1/restart'
+TOPIC_STATUS   = 'myrc/car1/status'
 mqttc = mqtt.Client()
+_last_controller_input = 0
+_command_seq = 0
+COMMAND_SESSION = str(int(time.time() * 1000))
+
+
+def _emit_esp_status(online, payload=None):
+    socketio.emit('esp_status', {
+        'online': online,
+        'payload': payload or {},
+        'serverTime': time.time()
+    })
+
+
+def _on_mqtt_connect(client, userdata, flags, rc, *extra):
+    if rc == 0:
+        client.subscribe(TOPIC_STATUS, qos=0)
+        print(f"[{time.strftime('%H:%M:%S')}] MQTT subscribed to {TOPIC_STATUS}")
+    else:
+        print(f"[{time.strftime('%H:%M:%S')}] MQTT connect failed rc={rc}")
+
+
+def _on_mqtt_message(client, userdata, msg):
+    if msg.topic != TOPIC_STATUS:
+        return
+    try:
+        payload = json.loads(msg.payload.decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        payload = {'raw': msg.payload.decode('utf-8', errors='replace')}
+    _emit_esp_status(True, payload)
+
+
+mqttc.on_connect = _on_mqtt_connect
+mqttc.on_message = _on_mqtt_message
 # connect_async + loop_start: the server still starts if the broker isn't up
 # yet and auto-reconnects — important when running a local broker.
 mqttc.connect_async(MQTT_BROKER, MQTT_PORT, keepalive=60)
@@ -40,10 +108,10 @@ mqttc.loop_start()
 print(f"📡 MQTT broker: {MQTT_BROKER}:{MQTT_PORT} (set MQTT_BROKER env var to change)")
 
 # — Gear & smoothing (time-based, frame-rate independent) —
-GEAR_SCALE      = [0.0, 0.10, 0.3, 0.5, 0.7, 1.0]
+GEAR_SCALE      = [0.0, 0.12, 0.18, 0.26, 0.36, 0.50]
 # Smoothing time constants (seconds). Smaller = snappier response.
 TAU_STEER       = 0.05   # steering: near-instant
-TAU_THROTTLE    = 0.12   # throttle: short ramp to spare the drivetrain
+TAU_THROTTLE    = 0.35   # throttle: slow crawl ramp for precise low-speed control
 TAU_GEAR        = 0.15   # gear-scale change
 MAX_DT          = 0.25   # clamp elapsed time so a stall can't jump the output
 steer_smooth    = 0.0
@@ -124,6 +192,22 @@ def phone():
 def dashboard():
     return render_template('Dashboard.html')
 
+
+@app.route('/api/location', methods=['GET', 'POST'])
+def api_location():
+    data = request.get_json(silent=True) or request.form.to_dict() or request.args.to_dict()
+    if not data and request.data:
+        raw_body = request.data.decode('utf-8', errors='replace')
+        try:
+            data = json.loads(raw_body)
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            data = {key: values[-1] for key, values in parse_qs(raw_body).items()}
+            if not data:
+                print(f"[{time.strftime('%H:%M:%S')}] unparsed GPS body: {raw_body!r}")
+    result = handle_location(data)
+    status = 200 if result.get('ok') else 400
+    return jsonify(result), status
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -146,9 +230,23 @@ def handle_connect(auth):
 
     # camera status is determined when /video_feed is requested
     socketio.emit('camera_status', {'online': 'checking'})
+    _emit_esp_status(False, {'state': 'waiting_for_heartbeat'})
 
 @socketio.on('location')
 def handle_location(data):
+    global _last_location
+    location = _normalize_location(data)
+    if location is None:
+        print(f"[{time.strftime('%H:%M:%S')}] invalid GPS location ignored: {data}")
+        return {'ok': False, 'error': 'invalid location'}
+
+    with _last_location_lock:
+        _last_location = location
+    print(f"[{time.strftime('%H:%M:%S')}] GPS location: lat={location['lat']:.6f}, "
+          f"lng={location['lng']:.6f}, acc={location['accuracy']}m")
+    socketio.emit('location', location)
+    return {'ok': True, 'location': location}
+
     # Persist the location server-side
     with _last_location_lock:
         _last_location = {
@@ -167,9 +265,10 @@ def handle_location(data):
 
 @socketio.on('controller_input')
 def handle_input(data):
-    global steer_smooth, throttle_smooth, scale_smooth, _last_input_t
+    global steer_smooth, throttle_smooth, scale_smooth, _last_input_t, _last_controller_input, _command_seq
+    _last_controller_input = time.time()
 
-    raw_steer = data.get('steering', 0.0)
+    raw_steer = -data.get('steering', 0.0)
     raw_thr   = data.get('throttle', 0.0)
     raw_brk   = data.get('brake', 0.0)
     gear      = int(data.get('gear', 1))
@@ -195,15 +294,24 @@ def handle_input(data):
 
     pwm = int(throttle_smooth * scale_smooth * 255)
 
-    payload = {'angle': angle, 'pwm': pwm, 'gear': gear}
+    _command_seq = (_command_seq + 1) % 1000000
+    payload = {
+        'angle': angle,
+        'pwm': pwm,
+        'gear': gear,
+        'seq': _command_seq,
+        'session': COMMAND_SESSION
+    }
     mqttc.publish(TOPIC_INPUT, json.dumps(payload), qos=0)
+    socketio.emit('drive_command', payload)
 
     speed = abs(pwm) * 0.2 * gear
     socketio.emit('telemetry', {
         'steering': angle,
         'throttle': pwm,
         'gear': gear,
-        'speed': round(speed, 1)
+        'speed': round(speed, 1),
+        'controllerOnline': True
     })
 
 
@@ -242,13 +350,13 @@ if __name__ == '__main__':
         # Threading mode + SSL = SocketIO + GPS all on one port
         context = ssl_mod.SSLContext(ssl_mod.PROTOCOL_TLS_SERVER)
         context.load_cert_chain(certfile, keyfile)
-        socketio = SocketIO(
-            app,
-            async_mode='threading',
-            cors_allowed_origins="*",
-            logger=True,
-            engineio_logger=True
-        )
+        gps_http_port = int(os.environ.get('GPS_HTTP_PORT', port + 1))
+
+        def run_gps_http_ingest():
+            print(f"GPSLogger HTTP endpoint: http://100.70.113.90:{gps_http_port}/api/location")
+            app.run(host='0.0.0.0', port=gps_http_port, debug=False, use_reloader=False)
+
+        threading.Thread(target=run_gps_http_ingest, daemon=True).start()
         socketio.run(app, host='0.0.0.0', port=port, debug=False, use_reloader=False,
                      ssl_context=context)
     else:

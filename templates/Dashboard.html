@@ -9,74 +9,98 @@
       margin:0; padding:0;
       width:100%; height:100%;
       overflow:hidden;
-      background: #111;
-      color: #fff;
+      background: #0b0f12;
+      color: #f4f7fb;
       font-family: 'Segoe UI', sans-serif;
     }
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      background:
+        linear-gradient(90deg, rgba(5,8,11,0.78) 0%, rgba(5,8,11,0.28) 28%, rgba(5,8,11,0.08) 56%, rgba(5,8,11,0.55) 100%),
+        linear-gradient(180deg, rgba(5,8,11,0.62) 0%, rgba(5,8,11,0.06) 24%, rgba(5,8,11,0.58) 100%);
+    }
     #top-bar {
-      position: absolute;
+      position: fixed;
       top: 0; left: 0;
-      width: 100%; height: 40px;
-      background: rgba(0,0,0,0.6);
+      width: 100%; height: 38px;
+      background: rgba(7,11,14,0.66);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 20px;
+      padding: 0 18px;
       box-sizing: border-box;
       z-index: 200;
-      font-size: 1.1em;
+      font-size: 0.95em;
+      backdrop-filter: blur(8px);
     }
     .telemetry-panel {
-      position: relative;
-      top: 60px; left: 2%;
-      transform: translateY(0);
+      position: fixed;
+      top: 58px; left: 18px;
       text-align: left;
-      z-index: 1;
-      width: 280px;
+      z-index: 120;
+      width: 286px;
+      padding: 16px;
+      background: rgba(6,10,14,0.58);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 16px 42px rgba(0,0,0,0.42);
+      backdrop-filter: blur(10px);
     }
     .telemetry-panel h1 {
-      font-size: 1.8em;
-      color: #4CAF50;
-      margin-bottom: 0.3em;
+      font-size: 1.35em;
+      color: #6EE7B7;
+      margin: 0 0 0.65em;
     }
     .telemetry-panel .stat {
-      font-size: 1.4em;
-      margin: 0.2em 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 1.05em;
+      margin: 0.36em 0;
+      color: #E5EDF5;
     }
     .telemetry-panel .gear {
-      font-size: 3em;
-      color: #03A9F4;
-      margin: 0.2em 0;
+      font-size: 3.4em;
+      color: #38BDF8;
+      margin: 0.24em 0 0.10em;
+      line-height: 0.9;
+      text-shadow: 0 0 18px rgba(56,189,248,0.38);
     }
     .telemetry-panel .battery, 
-    .telemetry-panel .controller-status {
-      font-size: 1.1em;
-      color: #FFEB3B;
-      margin-top: 0.3em;
+    .telemetry-panel .controller-status,
+    .telemetry-panel .keyboard-status {
+      font-size: 0.92em;
+      color: #FDE68A;
+      margin-top: 0.42em;
+      line-height: 1.35;
     }
     .telemetry-panel button {
-      background: #222;
-      border: 1px solid #555;
+      background: rgba(15,23,32,0.82);
+      border: 1px solid rgba(125,211,252,0.24);
       color: #fff;
-      padding: 0.4em 0.8em;
-      margin-right: 0.3em;
+      padding: 0.48em 0.72em;
+      margin: 0.35em 0.25em 0 0;
       cursor: pointer;
-      font-size: 0.9em;
+      font-size: 0.82em;
     }
     .telemetry-panel button:hover {
-      background: #333;
-      border-color: #888;
+      background: #223142;
+      border-color: #5b718b;
     }
     .camera-container {
       position: fixed;
-      bottom: 2%; right: 2%;
-      width: 65%; height: 55%;
+      inset: 0;
+      width: 100%; height: 100%;
       background: #000;
-      border: 2px solid #444;
-      box-shadow: 0 0 20px rgba(0,0,0,0.8);
+      border: none;
+      box-shadow: none;
       overflow: hidden;
       z-index: 0;
-      opacity: 0.95;
+      opacity: 1;
     }
     .camera-container img {
       width: 100%; height: 100%;
@@ -84,31 +108,45 @@
     }
     .map-container {
       position: fixed;
-      top: 55px; right: 2%;
-      width: 30%; height: 35%;
+      top: 58px; right: 18px;
+      width: min(38vw, 560px); height: 34vh;
+      min-width: 390px;
+      min-height: 260px;
       background: #000;
-      border: 2px solid #444;
-      box-shadow: 0 0 10px rgba(0,0,0,0.7);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 16px 44px rgba(0,0,0,0.58);
       overflow: hidden;
-      z-index: 60;
-      opacity: 0.85;
+      z-index: 120;
+      opacity: 0.92;
+      backdrop-filter: blur(8px);
     }
-    .map-container iframe {
+    #map {
       width: 100%; height: 100%;
-      border: none;
+    }
+    .car-marker {
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      font-size: 20px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.85));
+      transform-origin: center;
     }
     .map-overlay {
       position: absolute;
-      bottom: 4px; left: 8px;
+      bottom: 10px; left: 10px;
       color: #ddd;
-      font-size: 0.8em;
+      font-size: 0.9em;
+      background: rgba(5,8,11,0.78);
+      border: 1px solid rgba(255,255,255,0.14);
+      padding: 6px 8px;
       text-shadow: 1px 1px 2px #000;
       z-index: 61;
       pointer-events: none;
     }
     .map-overlay .gps-acc { color: #FFEB3B; }
-    .map-overlay .track-status { color: #4CAF50; }
-    .map-overlay .coords { color: #03A9F4; }
+    .map-overlay .track-status { color: #6EE7B7; }
+    .map-overlay .coords { color: #7DD3FC; }
     #gps-indicator {
       display: flex;
       align-items: center;
@@ -126,25 +164,26 @@
     .gps-dot.gray { background: #555; }
     #loc-log-toggle {
       position: fixed;
-      bottom: 2%; left: 2%;
-      z-index: 100;
-      background: #1a1a1a;
-      border: 1px solid #444;
-      color: #aaa;
-      padding: 4px 10px;
+      bottom: 18px; left: 18px;
+      z-index: 130;
+      background: rgba(6,10,14,0.72);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: #d4e4f2;
+      padding: 6px 10px;
       cursor: pointer;
       font-size: 0.8em;
-      opacity: 0.6;
+      opacity: 0.82;
+      backdrop-filter: blur(8px);
     }
     #loc-log-toggle:hover { opacity: 1; }
     #loc-log {
       position: fixed;
-      bottom: 40px; left: 2%;
+      bottom: 54px; left: 18px;
       width: 280px;
       max-height: 150px;
       overflow-y: auto;
-      background: rgba(0,0,0,0.85);
-      border: 1px solid #333;
+      background: rgba(6,10,14,0.86);
+      border: 1px solid rgba(255,255,255,0.12);
       padding: 6px 10px;
       z-index: 99;
       font-family: monospace;
@@ -160,8 +199,23 @@
       align-items: center;
       gap: 6px;
     }
+    .leaflet-tile-pane {
+      filter: saturate(0.9) brightness(0.78) contrast(1.12);
+    }
+    @media (max-width: 980px) {
+      .telemetry-panel {
+        width: 250px;
+      }
+      .map-container {
+        width: 42vw;
+        min-width: 310px;
+        height: 30vh;
+      }
+    }
   </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://cdn.socket.io/4.7.1/socket.io.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
   <div id="top-bar">
@@ -184,7 +238,10 @@
     <div class="gear" id="gear">–</div>
     <div class="battery">Battery: <span id="battery">--</span> V</div>
     <div class="controller-status">
-      Controller: <span id="controller-status">–</span>
+      ESP: <span id="controller-status">Waiting for heartbeat</span>
+    </div>
+    <div class="keyboard-status">
+      WASD: <span id="keyboard-status">ready, gear 1</span>
     </div>
     <div class="controls">
       <button id="btnRestartESP">Restart ESP</button>
@@ -200,7 +257,7 @@
          alt="Live camera feed">
   </div>
   <div class="map-container">
-    <iframe id="map" src="about:blank" title="Live location"></iframe>
+    <div id="map" aria-label="Live location"></div>
     <div class="map-overlay" id="mapOverlay">
       <div class="coords" id="coords">Waiting for GPS…</div>
       <div class="gps-acc" id="accDisplay"></div>
@@ -212,26 +269,39 @@
   <script>
     (function() {
       'use strict';
-      const SOCKET_SERVER = 'https://localhost:5002';
+      const SOCKET_SERVER = window.location.protocol === 'file:' ? 'https://localhost:5002' : window.location.origin;
       const MAX_TRACK_POINTS = 200;
       const $ = id => document.getElementById(id);
       const steer = $('steer'), throttle = $('throttle'), speed = $('speed');
       const gearEl = $('gear'), battery = $('battery'), ctrlStatus = $('controller-status');
+      const keyboardStatus = $('keyboard-status');
       const serverDot = $('server-dot'), serverStatus = $('server-status');
       const gpsDot = $('gps-dot'), gpsStatus = $('gps-status');
-      const mapIframe = $('map'), coords = $('coords'), accDisplay = $('accDisplay');
+      const mapEl = $('map'), coords = $('coords'), accDisplay = $('accDisplay');
       const trackPoints = $('trackPoints'), locLog = $('loc-log'), locLogToggle = $('loc-log-toggle');
       const timeDisplay = $('time-display'), weatherEl = $('weather');
-      let lastTelemetry = {}, lastLocation = null, locationHistory = [], weatherFetched = false;
+      let lastTelemetry = {}, lastLocation = null, locationHistory = [], weatherFetched = false, lastEspSeen = 0, lastControllerSeen = 0;
       const socket = io(SOCKET_SERVER, { transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000 });
-      socket.on('connect', () => { serverDot.className = 'gps-dot green'; serverStatus.textContent = 'Connected'; ctrlStatus.innerText = 'Connected'; });
-      socket.on('disconnect', () => { serverDot.className = 'gps-dot red'; serverStatus.textContent = 'Disconnected'; ctrlStatus.innerText = 'Disconnected'; });
+      socket.on('connect', () => { serverDot.className = 'gps-dot green'; serverStatus.textContent = 'Server connected'; ctrlStatus.innerText = 'Waiting for heartbeat'; });
+      socket.on('disconnect', () => { serverDot.className = 'gps-dot red'; serverStatus.textContent = 'Server disconnected'; ctrlStatus.innerText = 'Unknown'; });
       socket.on('connect_error', () => { serverDot.className = 'gps-dot gray'; serverStatus.textContent = 'Connection error'; });
+      socket.on('esp_status', data => {
+        if (data.online) {
+          lastEspSeen = Date.now();
+          const payload = data.payload || {};
+          const rssi = payload.wifi !== undefined ? ` (${payload.wifi} dBm)` : '';
+          ctrlStatus.innerText = `Online${rssi}`;
+        } else if (!lastEspSeen) {
+          ctrlStatus.innerText = 'Offline / no heartbeat';
+        }
+      });
       socket.on('telemetry', data => {
+        if (data.controllerOnline) lastControllerSeen = Date.now();
         lastTelemetry = data;
         steer.innerText = data.steering; throttle.innerText = data.throttle;
         speed.innerText = data.speed.toFixed(1); gearEl.innerText = data.gear;
         if (data.battery !== undefined) battery.innerText = data.battery.toFixed(1);
+        if (lastEspSeen && data.controllerOnline) ctrlStatus.innerText = ctrlStatus.innerText.replace(' | no controller', '').replace(' | controller online', '') + ' | controller online';
       });
       $('btnRestartESP').onclick = () => { socket.emit('restart_esp'); alert('Restart ESP requested'); };
       $('btnRestartHotspot').onclick = () => { socket.emit('restart_hotspot'); alert('Restart Hotspot requested'); };
@@ -242,6 +312,53 @@
           `Steering ${d.steering} degrees, throttle ${d.throttle}, speed ${d.speed.toFixed(1)} kilometers per hour, gear ${d.gear}`
         ));
       };
+      const driveKeys = {w:false, a:false, s:false, d:false};
+      let keyboardDriveActive = false;
+      function buildKeyboardCommand() {
+        const steering = (driveKeys.a ? -1 : 0) + (driveKeys.d ? 1 : 0);
+        const throttleValue = driveKeys.s ? 1 : 0;
+        const brakeValue = driveKeys.w ? 1 : 0;
+        return {
+          steering: Math.max(-1, Math.min(1, steering)),
+          throttle: brakeValue ? 0 : throttleValue,
+          brake: throttleValue ? 0 : brakeValue,
+          gear: 1
+        };
+      }
+      function sendKeyboardCommand(forceNeutral) {
+        if (!socket.connected) return;
+        const command = forceNeutral ? {steering:0, throttle:0, brake:0, gear:1} : buildKeyboardCommand();
+        socket.emit('controller_input', command);
+      }
+      function updateKeyboardStatus() {
+        const active = Object.values(driveKeys).some(Boolean);
+        keyboardStatus.textContent = active ? 'active, gear 1' : 'ready, gear 1';
+        keyboardDriveActive = active;
+      }
+      window.addEventListener('keydown', event => {
+        const key = event.key.toLowerCase();
+        if (!(key in driveKeys) || event.repeat) return;
+        driveKeys[key] = true;
+        updateKeyboardStatus();
+        sendKeyboardCommand(false);
+        event.preventDefault();
+      });
+      window.addEventListener('keyup', event => {
+        const key = event.key.toLowerCase();
+        if (!(key in driveKeys)) return;
+        driveKeys[key] = false;
+        updateKeyboardStatus();
+        sendKeyboardCommand(false);
+        if (!keyboardDriveActive) {
+          sendKeyboardCommand(true);
+          setTimeout(() => sendKeyboardCommand(true), 60);
+          setTimeout(() => sendKeyboardCommand(true), 120);
+        }
+        event.preventDefault();
+      });
+      setInterval(() => {
+        if (keyboardDriveActive) sendKeyboardCommand(false);
+      }, 50);
       function updateTime() { timeDisplay.innerText = new Date().toLocaleTimeString(); }
       setInterval(updateTime, 1000); updateTime();
       async function fetchWeather(lat, lng) {
@@ -251,28 +368,73 @@
           weatherEl.innerText = `🌤️ ${j.current_weather.temperature}°C`;
         } catch(e) { weatherEl.innerText = '❓'; }
       }
-      function buildMapUrl(lat, lng, trail) {
-        const allPts = trail.length > 0 ? trail : [{lat, lng}];
-        let minLat=Infinity, maxLat=-Infinity, minLng=Infinity, maxLng=-Infinity;
-        allPts.forEach(p => { if(p.lat<minLat)minLat=p.lat; if(p.lat>maxLat)maxLat=p.lat; if(p.lng<minLng)minLng=p.lng; if(p.lng>maxLng)maxLng=p.lng; });
-        const pad=0.0005;
-        let extra = `&marker=${lat},${lng}`;
-        if(trail.length>=2) extra = `&marker=${lat},${lng}&c=path:${trail.map(p=>`${p.lat},${p.lng}`).join(',')}`;
-        return `https://www.openstreetmap.org/export/embed.html?bbox=${minLng-pad},${minLat-pad},${maxLng+pad},${maxLat+pad}&layer=mapnik${extra}`;
+      const liveMap = L.map(mapEl, { zoomControl: true, attributionControl: true }).setView([0, 0], 18);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(liveMap);
+      const carIcon = L.divIcon({
+        className: '',
+        html: '<div class="car-marker">🚗</div>',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+      const carMarker = L.marker([0, 0], { icon: carIcon });
+      const trackLine = L.polyline([], { color: '#03A9F4', weight: 3, opacity: 0.8 });
+      let mapHasLocation = false;
+      function updateLiveMap(lat, lng, heading) {
+        const point = [lat, lng];
+        if (!mapHasLocation) {
+          liveMap.setView(point, 19);
+          carMarker.setLatLng(point).addTo(liveMap);
+          trackLine.addTo(liveMap);
+          mapHasLocation = true;
+        } else {
+          carMarker.setLatLng(point);
+          liveMap.panTo(point, { animate: false });
+        }
+        if (Number.isFinite(heading) && heading > 0) {
+          const markerEl = carMarker.getElement();
+          if (markerEl) markerEl.querySelector('.car-marker').style.rotate = `${heading}deg`;
+        }
+        trackLine.setLatLngs(locationHistory.map(p => [p.lat, p.lng]));
       }
+      function showWaitingGpsStatus(status) {
+        if (lastLocation) return;
+        const state = status.state || 'connected';
+        const accuracy = Number(status.accuracy);
+        const accText = Number.isFinite(accuracy) && accuracy > 0 ? ` (${accuracy.toFixed(0)}m)` : '';
+        if (state === 'error' || state === 'paused' || state === 'send_failed') {
+          gpsDot.className = 'gps-dot red';
+        } else {
+          gpsDot.className = 'gps-dot yellow';
+        }
+        gpsStatus.textContent = state === 'too_inaccurate' ? 'GPS Too Weak' : state === 'send_failed' ? 'GPS Not Received' : 'Phone GPS';
+        coords.innerText = `${status.message || 'Phone connected, waiting for GPS fix'}${accText}`;
+      }
+      socket.on('phone_status', showWaitingGpsStatus);
       socket.on('location', loc => {
-        const {lat, lng, accuracy: acc} = loc;
+        const lat = Number(loc.lat);
+        const lng = Number(loc.lng);
+        const acc = Number(loc.accuracy);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          gpsDot.className = 'gps-dot gray';
+          gpsStatus.textContent = 'No GPS';
+          return;
+        }
         lastLocation = loc;
-        const a = acc||50;
+        const a = Number.isFinite(acc) && acc > 0 ? acc : 0;
         if(a<=10){gpsDot.className='gps-dot green';gpsStatus.textContent='GPS Excellent';}
         else if(a<=25){gpsDot.className='gps-dot yellow';gpsStatus.textContent='GPS Fair';}
         else if(a<=50){gpsDot.className='gps-dot red';gpsStatus.textContent='GPS Weak';}
-        else{gpsDot.className='gps-dot gray';gpsStatus.textContent='No GPS';}
+        else{gpsDot.className='gps-dot red';gpsStatus.textContent='GPS Poor';}
         locationHistory.push({lat,lng});
         if(locationHistory.length>MAX_TRACK_POINTS) locationHistory=locationHistory.slice(-MAX_TRACK_POINTS);
-        mapIframe.src = buildMapUrl(lat, lng, locationHistory);
+        updateLiveMap(lat, lng, Number(loc.heading));
+        const serverTime = Number(loc.serverTime);
+        const age = Number.isFinite(serverTime) ? Math.max(0, (Date.now() / 1000) - serverTime) : 0;
         coords.innerText = `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        accDisplay.innerText = a>0 ? `±${a.toFixed(0)}m` : '';
+        accDisplay.innerText = (a > 0 ? '+/-' + a.toFixed(0) + 'm' : '') + (age ? ' | age ' + age.toFixed(1) + 's' : '');
         trackPoints.innerText = `Track: ${locationHistory.length} pts`;
         if(locLog.classList.contains('visible')){
           const e=document.createElement('div'); e.className='latest';
@@ -288,6 +450,15 @@
         locLogToggle.textContent = locLog.classList.contains('visible') ? '📍 Hide log' : '📍 Location log';
       });
       setInterval(() => { if(!socket.connected){serverDot.className='gps-dot red';serverStatus.textContent='Disconnected';} }, 5000);
+      setInterval(() => {
+        if (lastEspSeen && Date.now() - lastEspSeen > 3500) {
+          ctrlStatus.innerText = 'Offline / heartbeat lost';
+          lastEspSeen = 0;
+        }
+        if (lastEspSeen && (!lastControllerSeen || Date.now() - lastControllerSeen > 1500)) {
+          ctrlStatus.innerText = ctrlStatus.innerText.replace(' | controller online', '') + ' | no controller';
+        }
+      }, 1000);
     })();
   </script>
 </body>

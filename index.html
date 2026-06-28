@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RC Online Car</title>
+  <link rel="icon" type="image/x-icon" href="templates/imghead.ico">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080d11;
+      --panel: rgba(12, 18, 24, 0.78);
+      --panel-strong: rgba(12, 18, 24, 0.94);
+      --line: rgba(255,255,255,0.12);
+      --text: #eef6fb;
+      --muted: #a9b8c6;
+      --green: #6ee7b7;
+      --blue: #7dd3fc;
+      --amber: #fde68a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    a { color: inherit; }
+    .hero {
+      min-height: 86vh;
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      background: #05080b url("templates/car.jpg") center / cover no-repeat;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(90deg, rgba(4,7,10,0.94), rgba(4,7,10,0.58) 45%, rgba(4,7,10,0.18)),
+        linear-gradient(180deg, rgba(4,7,10,0.10), rgba(4,7,10,0.86));
+    }
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px clamp(18px, 5vw, 72px);
+      background: rgba(5, 8, 11, 0.66);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+    header strong {
+      color: var(--green);
+      letter-spacing: 0.03em;
+    }
+    nav {
+      display: flex;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    nav a {
+      text-decoration: none;
+    }
+    nav a:hover { color: var(--text); }
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      width: min(1120px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 120px 0 56px;
+    }
+    .eyebrow {
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    h1 {
+      max-width: 800px;
+      font-size: clamp(3rem, 7vw, 6.8rem);
+      line-height: 0.92;
+      margin: 0 0 22px;
+      letter-spacing: 0;
+    }
+    .hero p {
+      max-width: 720px;
+      color: #d4e1eb;
+      font-size: clamp(1rem, 2vw, 1.22rem);
+      margin: 0 0 28px;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.07);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .button.primary {
+      background: var(--green);
+      color: #07100d;
+      border-color: transparent;
+    }
+    main {
+      width: min(1120px, calc(100% - 36px));
+      margin: 0 auto;
+      padding: 64px 0 90px;
+    }
+    section {
+      margin-bottom: 72px;
+    }
+    h2 {
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+      margin: 0 0 18px;
+    }
+    .lead {
+      max-width: 760px;
+      color: var(--muted);
+      margin: 0 0 28px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 20px;
+    }
+    .card h3 {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-size: 1.05rem;
+    }
+    .card p, .card li {
+      color: var(--muted);
+      margin: 0;
+    }
+    .card ul {
+      padding-left: 18px;
+      margin: 0;
+    }
+    .architecture {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+    .flow {
+      border: 1px solid var(--line);
+      background: var(--panel-strong);
+      padding: 22px;
+      display: grid;
+      gap: 12px;
+    }
+    .node {
+      border: 1px solid rgba(125, 211, 252, 0.22);
+      padding: 14px 16px;
+      background: rgba(125, 211, 252, 0.06);
+    }
+    .arrow {
+      color: var(--amber);
+      font-weight: 800;
+    }
+    .media {
+      min-height: 360px;
+      border: 1px solid var(--line);
+      background: url("templates/dashboard.png") center / cover no-repeat;
+    }
+    pre {
+      overflow: auto;
+      margin: 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: #05080b;
+      color: #d8e8f2;
+      font-size: 0.92rem;
+    }
+    code { font-family: "Cascadia Mono", Consolas, monospace; }
+    .setup {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .image-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .image-strip img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border: 1px solid var(--line);
+    }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px clamp(18px, 5vw, 72px);
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    @media (max-width: 820px) {
+      header {
+        align-items: flex-start;
+        gap: 10px;
+        flex-direction: column;
+      }
+      nav { flex-wrap: wrap; }
+      .grid, .architecture, .setup, .image-strip {
+        grid-template-columns: 1fr;
+      }
+      .hero {
+        min-height: 78vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>RC Online Car</strong>
+    <nav>
+      <a href="#architecture">Architecture</a>
+      <a href="#setup">Setup</a>
+      <a href="#controls">Controls</a>
+      <a href="https://github.com/sasimis/rconlinecar">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow">ESP32 + Android bridge + Tailscale</div>
+      <h1>Remote RC driving over a phone-mounted bridge.</h1>
+      <p>
+        A brushless RC car controlled from a PC dashboard. The Android phone rides on the car,
+        streams camera/GPS, and bridges Tailscale commands to the ESP32 over the car-side network.
+      </p>
+      <div class="actions">
+        <a class="button primary" href="#setup">Setup Guide</a>
+        <a class="button" href="https://github.com/sasimis/rconlinecar">Source Code</a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section>
+      <h2>Current Status</h2>
+      <p class="lead">
+        The project has moved from public-MQTT-only driving to a phone bridge architecture.
+        Public MQTT remains as fallback/status, while primary driving commands are forwarded by the phone using UDP.
+      </p>
+      <div class="grid">
+        <div class="card">
+          <h3>Driving Dashboard</h3>
+          <p>Camera-first cockpit with telemetry, map overlay, ESP status, WASD control, and PS4 controller support.</p>
+        </div>
+        <div class="card">
+          <h3>Phone Bridge</h3>
+          <p>Termux script receives Socket.IO commands over Tailscale and sends low-latency UDP packets to the ESP32.</p>
+        </div>
+        <div class="card">
+          <h3>ESP32 Control</h3>
+          <p>UDP command listener, command sequence protection, throttle failsafe, steering servo, and ESC output.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <p class="lead">Tailscale connects the PC and phone. The phone then bridges commands to the ESP32 locally.</p>
+      <div class="architecture">
+        <div class="flow">
+          <div class="node"><strong>PC</strong><br>Flask dashboard, WASD, PS4 client</div>
+          <div class="arrow">↓ Tailscale / Socket.IO</div>
+          <div class="node"><strong>Android phone on car</strong><br>phone_bridge.py, IP Webcam, GPSLogger</div>
+          <div class="arrow">↓ UDP over hotspot / car-side Wi-Fi</div>
+          <div class="node"><strong>ESP32</strong><br>Servo steering, ESC throttle, failsafe</div>
+        </div>
+        <div class="media" aria-label="Dashboard preview"></div>
+      </div>
+    </section>
+
+    <section id="setup">
+      <h2>Setup</h2>
+      <div class="setup">
+        <div class="card">
+          <h3>PC</h3>
+          <pre><code>pip install flask flask-socketio python-socketio eventlet paho-mqtt opencv-python pygame
+python app.py</code></pre>
+        </div>
+        <div class="card">
+          <h3>Android Phone</h3>
+          <pre><code>pkg update
+pkg install python
+pip install "python-socketio[client]"
+python phone_bridge.py</code></pre>
+        </div>
+        <div class="card">
+          <h3>ESP32</h3>
+          <p>Upload <code>rc_controller/rc_controller.ino</code>. The ESP listens for UDP commands on port <code>4210</code>.</p>
+        </div>
+        <div class="card">
+          <h3>GPSLogger</h3>
+          <pre><code>http://100.70.113.90:5003/api/location?lat=%LAT&lon=%LON&acc=%ACC&alt=%ALT&speed=%SPD&dir=%DIR</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="controls">
+      <h2>Controls And Robustness</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>WASD</h3>
+          <ul>
+            <li><strong>W</strong>: brake / reverse</li>
+            <li><strong>S</strong>: forward</li>
+            <li><strong>A</strong>: left</li>
+            <li><strong>D</strong>: right</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>PS4 Controller</h3>
+          <p>Supported by <code>ps4controller.py</code>. Current hardware issue: Bluetooth pairing is unreliable and USB cable is loose.</p>
+        </div>
+        <div class="card">
+          <h3>Failsafe</h3>
+          <p>The ESP cuts throttle if command packets stop, and ignores stale command sequence numbers.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Gallery</h2>
+      <div class="image-strip">
+        <img src="templates/car.jpg" alt="RC car">
+        <img src="templates/dashboard.png" alt="Dashboard">
+        <img src="templates/blueprint.PNG" alt="Blueprint">
+        <img src="templates/cam.png" alt="Phone camera setup">
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>RC Online Car</span>
+    <span><a href="https://github.com/sasimis/rconlinecar">github.com/sasimis/rconlinecar</a></span>
+  </footer>
+</body>
+</html>

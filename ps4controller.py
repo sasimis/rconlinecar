@@ -3,7 +3,7 @@ import pygame, time, socketio, json, os
 # ============================================================
 #  CONFIG
 # ============================================================
-SERVER       = 'http://localhost:5002'
+SERVER       = os.getenv('RC_SERVER', 'https://localhost:5002')
 CALIB_FILE   = 'ps4_calibration.json'
 MAX_GEAR     = 5
 DZ           = 0.1      # trigger dead-zone (fraction)
@@ -224,7 +224,7 @@ t_ax, t_rest, t_full = cfg['throttle']['axis'], cfg['throttle']['rest'], cfg['th
 b_ax, b_rest, b_full = cfg['brake']['axis'], cfg['brake']['rest'], cfg['brake']['full']
 GEAR_UP, GEAR_DOWN = cfg['gear_up'], cfg['gear_down']
 
-sio = socketio.Client()
+sio = socketio.Client(ssl_verify=False)
 sio.connect(SERVER, transports=['websocket'])
 print("\n🟢 Connected, SID:", sio.sid)
 print("— Move sticks/triggers; live debug below —\n")
